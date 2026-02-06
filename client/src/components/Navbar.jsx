@@ -7,9 +7,6 @@ export default function Navbar() {
     const location = useLocation();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-    // Hide navbar on Dashboard page for mobile (to match target design)
-    const isDashboard = location.pathname === '/';
-
     const navItems = [
         { path: '/', icon: Home, label: 'Dashboard' },
         { path: '/reminders', icon: Bell, label: 'Reminders' },
@@ -20,7 +17,7 @@ export default function Navbar() {
     ];
 
     return (
-        <nav className={`navbar ${isDashboard ? 'hide-on-mobile-dashboard' : ''}`}>
+        <nav className="navbar">
             <div className="navbar-container">
                 <div className="navbar-brand">
                     <h1 className="text-gradient-crimson">RoutineMaster</h1>
