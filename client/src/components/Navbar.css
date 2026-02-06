@@ -97,6 +97,11 @@
 }
 
 @media (max-width: 768px) {
+    /* Hide navbar on Dashboard page for mobile */
+    .navbar.hide-on-mobile-dashboard {
+        display: none !important;
+    }
+    
     .navbar {
         position: fixed;
         top: auto;

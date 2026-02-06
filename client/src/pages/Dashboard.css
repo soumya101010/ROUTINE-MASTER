@@ -114,7 +114,7 @@
     }
 
     .dashboard {
-        padding: calc(40px + env(safe-area-inset-top)) var(--spacing-md) calc(100px + env(safe-area-inset-bottom)) !important;
+        padding: calc(40px + env(safe-area-inset-top)) var(--spacing-md) calc(20px + env(safe-area-inset-bottom)) !important;
         background: transparent;
         min-height: 100vh;
         color: var(--color-text-primary);
@@ -127,13 +127,15 @@
     /* Mobile Header */
     .mobile-only-header {
         display: flex !important;
-        flex-direction: row !important; /* Force row */
+        flex-direction: row !important;
+        /* Force row */
         justify-content: space-between !important;
         align-items: center !important;
         margin-bottom: 0px;
         width: 100% !important;
         box-sizing: border-box !important;
-        padding: 0 var(--spacing-xs); /* Slight padding to prevent edge touching */
+        padding: 0 var(--spacing-xs);
+        /* Slight padding to prevent edge touching */
     }
 
     .avatar {
@@ -145,7 +147,8 @@
         border-radius: 50% !important;
         overflow: hidden !important;
         border: 2px solid var(--glass-border) !important;
-        background-color: #000; /* Fallback */
+        background-color: #000;
+        /* Fallback */
     }
 
     .user-profile {
@@ -169,7 +172,8 @@
     }
 
     .greeting h3 {
-        font-size: 1.125rem; /* Increased to match screenshot */
+        font-size: 1.125rem;
+        /* Increased to match screenshot */
         font-weight: 700;
         margin: 0;
         color: var(--color-text-primary);
@@ -217,7 +221,8 @@
         justify-content: center;
         cursor: pointer;
         transition: transform 0.2s;
-        text-decoration: none; /* Ensure no underline for Link */
+        text-decoration: none;
+        /* Ensure no underline for Link */
     }
 
     .mobile-heart-btn:active {
