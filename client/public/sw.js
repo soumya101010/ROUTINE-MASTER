@@ -1,8 +1,8 @@
-// KILLER SERVICE WORKER
+// KILLER SERVICE WORKER - v3
 // This file exists solely to replace the old 'sw.js' and wipe the cache.
 // Once installed, it deletes all caches and claims the client.
 
-const CACHE_NAME = 'killer-sw-v2';
+const CACHE_NAME = 'killer-sw-v3-feb6';
 
 self.addEventListener('install', (event) => {
   // Install immediately, don't wait

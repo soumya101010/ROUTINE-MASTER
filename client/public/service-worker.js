@@ -1,4 +1,4 @@
-const CACHE_NAME = 'routinemaster-v6';
+const CACHE_NAME = 'routinemaster-v7-feb6';
 const urlsToCache = [
     '/',
     '/index.html',

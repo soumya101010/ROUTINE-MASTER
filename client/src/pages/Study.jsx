@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { Plus, Trash2, BookOpen, ChevronRight, ChevronDown, CheckCircle2, Circle } from 'lucide-react';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
@@ -9,6 +9,8 @@ export default function Study() {
     const [items, setItems] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [expandedItems, setExpandedItems] = useState(new Set());
+    const [savingItems, setSavingItems] = useState(new Set()); // Track items being saved
+    const saveTimeoutRef = useRef({}); // Debounce refs for each item
     const [formData, setFormData] = useState({
         title: '',
         type: 'subject',
@@ -98,14 +100,26 @@ export default function Study() {
         ));
     };
 
-    const saveProgress = async (item) => {
+    // Save progress - gets current value from state to avoid stale closure
+    const saveProgress = useCallback(async (itemId, progress) => {
+        // Prevent duplicate saves
+        if (savingItems.has(itemId)) return;
+
+        setSavingItems(prev => new Set([...prev, itemId]));
+
         try {
-            await studyAPI.update(item._id, { progress: item.progress });
+            await studyAPI.update(itemId, { progress });
         } catch (error) {
             console.error('Error saving progress:', error);
             loadItems(); // Revert on error
+        } finally {
+            setSavingItems(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(itemId);
+                return newSet;
+            });
         }
-    };
+    }, [savingItems]);
 
 
     // ... existing helpers ...
@@ -113,10 +127,12 @@ export default function Study() {
     const CircularSlider = ({ size, value, color, onChange, onCommit }) => {
         const [isDragging, setIsDragging] = useState(false);
         const [localValue, setLocalValue] = useState(value);
+        const valueRef = useRef(value); // Track current value for closure
 
         useEffect(() => {
             if (!isDragging) {
                 setLocalValue(value);
+                valueRef.current = value;
             }
         }, [value, isDragging]);
 
@@ -124,7 +140,7 @@ export default function Study() {
         const center = size / 2;
 
         const displayValue = isDragging ? localValue : value;
-        
+
         // Calculate knob position based on standard circle (0 degrees at 3 o'clock)
         // We will rotate the entire SVG group by -90 degrees to start at 12 o'clock
         const angleInRadians = (displayValue / 100) * 360 * (Math.PI / 180);
@@ -142,6 +158,7 @@ export default function Study() {
 
             let percentage = Math.round((angle / 360) * 100);
             setLocalValue(percentage);
+            valueRef.current = percentage; // Update ref for commit
             onChange(percentage);
         };
 
@@ -158,7 +175,7 @@ export default function Study() {
                 setIsDragging(false);
                 document.removeEventListener('mousemove', handleMouseMove);
                 document.removeEventListener('mouseup', handleMouseUp);
-                onCommit();
+                onCommit(valueRef.current);
             };
 
             document.addEventListener('mousemove', handleMouseMove);
@@ -180,7 +197,7 @@ export default function Study() {
                 setIsDragging(false);
                 document.removeEventListener('touchmove', handleTouchMove);
                 document.removeEventListener('touchend', handleTouchEnd);
-                onCommit();
+                onCommit(valueRef.current);
             };
 
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
@@ -218,7 +235,7 @@ export default function Study() {
                             strokeDasharray="100"
                             strokeDashoffset={100 - displayValue}
                             strokeLinecap="round"
-                            style={{ 
+                            style={{
                                 transition: isDragging ? 'none' : 'stroke-dashoffset 0.3s ease',
                                 filter: `drop-shadow(0 0 2px ${color})`
                             }}
@@ -292,7 +309,7 @@ export default function Study() {
                                 value={item.progress || 0}
                                 color={typeColors[item.type]}
                                 onChange={(val) => handleProgressChange(item._id, val)}
-                                onCommit={() => saveProgress(item)}
+                                onCommit={(val) => saveProgress(item._id, val)}
                             />
                         </div>
                         <button

@@ -4,10 +4,23 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const api = axios.create({
     baseURL: API_BASE_URL,
+    timeout: 10000, // 10 second timeout
     headers: {
         'Content-Type': 'application/json'
     }
 });
+
+// Add response interceptor for error handling
+api.interceptors.response.use(
+    (response) => response,
+    async (error) => {
+        // If timeout or network error, provide clearer message
+        if (error.code === 'ECONNABORTED') {
+            error.message = 'Request timed out. Please check your connection.';
+        }
+        return Promise.reject(error);
+    }
+);
 
 // Reminders
 export const reminderAPI = {
@@ -31,6 +44,7 @@ export const studyAPI = {
     getChildren: (id) => api.get(`/study/${id}/children`),
     create: (data) => api.post('/study', data),
     update: (id, data) => api.patch(`/study/${id}`, data),
+    batchUpdate: (updates) => api.patch('/study/batch', { updates }),
     delete: (id) => api.delete(`/study/${id}`)
 };
 
