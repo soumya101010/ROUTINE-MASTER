@@ -1,0 +1,286 @@
+.study-page {
+    padding: var(--spacing-xl);
+    max-width: 1400px;
+    margin: 0 auto;
+}
+
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.study-form {
+    padding: var(--spacing-xl);
+    margin-bottom: var(--spacing-xl);
+}
+
+.study-form h3 {
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+}
+
+.form-group {
+    margin-bottom: var(--spacing-lg);
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: var(--spacing-sm);
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.progress-value {
+    margin-left: var(--spacing-md);
+    color: var(--color-accent-primary);
+    font-weight: 600;
+}
+
+.form-actions {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: flex-end;
+    margin-top: var(--spacing-xl);
+}
+
+.study-tree {
+    padding: var(--spacing-lg);
+}
+
+.study-item {
+    margin-bottom: var(--spacing-sm);
+}
+
+.study-item-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md);
+    background: var(--color-surface);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-base);
+}
+
+.study-item-content:hover {
+    background: var(--color-surface-hover);
+}
+
+.study-item-left {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    flex: 1;
+}
+
+.expand-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    display: flex;
+    align-items: center;
+}
+
+.complete-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    transition: all var(--transition-base);
+}
+
+.complete-btn:hover {
+    transform: scale(1.1);
+}
+
+.study-item-info {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-xs);
+}
+
+.study-item-info h4 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--color-text-primary);
+}
+
+.study-item-info h4.completed {
+    text-decoration: line-through;
+    opacity: 0.6;
+}
+
+.study-type {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.study-item-right {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+}
+
+
+
+
+
+
+/* Circular Slider Styles */
+.slider-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: transparent;
+    padding: 0;
+    margin: 0;
+    border: none;
+    width: auto;
+}
+
+.circular-slider {
+    position: relative;
+    cursor: grab;
+    touch-action: none;
+    /* Prevent scrolling while dragging */
+}
+
+.circular-slider:active {
+    cursor: grabbing;
+}
+
+.circular-slider svg {
+    transform: rotate(0deg);
+    overflow: visible;
+}
+
+.circular-slider circle {
+    transition: stroke-dashoffset 0.1s ease;
+}
+
+/* Add glow effect to progress circle */
+.circular-slider circle:last-child {
+    filter: drop-shadow(0 0 4px var(--color-surface));
+}
+
+.circular-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    pointer-events: none;
+    /* Let clicks pass through to SVG */
+}
+
+.circular-content .label {
+    font-size: 0.65rem;
+    color: var(--color-text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+}
+
+.circular-content .value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    line-height: 1;
+}
+
+.progress-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px var(--active-color);
+}
+
+/* Firefox Thumb */
+.progress-slider::-moz-range-thumb {
+    width: 16px;
+    height: 16px;
+    background: var(--active-color);
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    box-shadow: 0 0 10px var(--active-color);
+    transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.progress-slider::-moz-range-thumb:hover {
+    transform: scale(1.2);
+    box-shadow: 0 0 15px var(--active-color);
+}
+
+.progress-text {
+    font-size: 0.875rem;
+    color: var(--color-text-secondary);
+    min-width: 40px;
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: var(--color-accent-danger);
+    cursor: pointer;
+    padding: var(--spacing-xs);
+    transition: all var(--transition-base);
+}
+
+.delete-btn:hover {
+    transform: scale(1.1);
+}
+
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-2xl);
+    margin-top: var(--spacing-2xl);
+}
+
+.empty-state h3 {
+    margin: var(--spacing-md) 0;
+}
+
+@media (max-width: 768px) {
+    .study-page {
+        padding: var(--spacing-md);
+    }
+
+    .page-header {
+        flex-direction: column;
+        gap: var(--spacing-md);
+        align-items: flex-start;
+    }
+
+    .form-row {
+        grid-template-columns: 1fr;
+    }
+
+    .study-item-content {
+        flex-direction: row; /* Keep row layout */
+        align-items: center;
+        gap: var(--spacing-sm);
+    }
+
+    .study-item-right {
+        width: auto; /* Let it take only needed space */
+        justify-content: flex-end;
+        gap: var(--spacing-md);
+    }
+
+    .progress-bar {
+        flex: 1;
+    }
+}

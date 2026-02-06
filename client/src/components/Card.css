@@ -1,0 +1,27 @@
+.card {
+    border: 1px solid rgba(255, 105, 180, 0.4);
+    box-shadow:
+        0 0 1px rgba(255, 105, 180, 0.8),
+        0 0 3px rgba(255, 105, 180, 0.5),
+        0 0 8px rgba(255, 105, 180, 0.3),
+        0 4px 12px rgba(0, 0, 0, 0.4);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    border-color: rgba(255, 105, 180, 0.6);
+    box-shadow:
+        0 0 2px rgba(255, 105, 180, 1),
+        0 0 5px rgba(255, 105, 180, 0.6),
+        0 0 12px rgba(255, 105, 180, 0.4),
+        0 6px 16px rgba(0, 0, 0, 0.5);
+    transform: translateY(-2px);
+}
+
+.card-hover {
+    cursor: pointer;
+}
+
+.card-hover:active {
+    transform: scale(0.98);
+}

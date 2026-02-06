@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Android Cache Diagnostic Tool</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: #000;
+            color: #fff;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            color: #ec4899;
+            margin-bottom: 20px;
+            font-size: 24px;
+        }
+
+        .status-box {
+            background: rgba(26, 26, 26, 0.8);
+            border: 1px solid #ec4899;
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
+        .status-box h2 {
+            color: #f472b6;
+            font-size: 18px;
+            margin-bottom: 10px;
+        }
+
+        .info {
+            background: rgba(236, 72, 153, 0.1);
+            padding: 10px;
+            border-radius: 8px;
+            margin: 5px 0;
+            font-size: 14px;
+        }
+
+        .success {
+            color: #10b981;
+        }
+
+        .error {
+            color: #ef4444;
+        }
+
+        .warning {
+            color: #f59e0b;
+        }
+
+        button {
+            background: linear-gradient(135deg, #e91e63 0%, #ec4899 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin: 10px 0;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .timestamp {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid #10b981;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 18px;
+            font-weight: 600;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <h1>🔧 Android Cache Diagnostic</h1>
+
+        <div class="timestamp">
+            Cache Version: <span id="cacheVersion">Checking...</span>
+        </div>
+
+        <div class="timestamp">
+            Page Load Time: <span id="loadTime"></span>
+        </div>
+
+        <div class="status-box">
+            <h2>📊 Browser Info</h2>
+            <div class="info" id="browserInfo"></div>
+        </div>
+
+        <div class="status-box">
+            <h2>📱 Viewport Info</h2>
+            <div class="info" id="viewportInfo"></div>
+        </div>
+
+        <div class="status-box">
+            <h2>🔄 Service Worker Status</h2>
+            <div class="info" id="swStatus"></div>
+        </div>
+
+        <div class="status-box">
+            <h2>💾 Cache Status</h2>
+            <div class="info" id="cacheStatus"></div>
+        </div>
+
+        <div class="status-box">
+            <h2>🎨 CSS Features</h2>
+            <div class="info" id="cssFeatures"></div>
+        </div>
+
+        <button onclick="clearAllCaches()">🗑️ Clear All Caches</button>
+        <button onclick="unregisterServiceWorker()">⚠️ Unregister Service Worker</button>
+        <button onclick="hardReload()">🔄 Hard Reload</button>
+        <button onclick="location.reload()">♻️ Normal Reload</button>
+    </div>
+
+    <script>
+        // Display current time
+        document.getElementById('loadTime').textContent = new Date().toLocaleString();
+
+        // Browser Info
+        document.getElementById('browserInfo').innerHTML = `
+            <strong>User Agent:</strong> ${navigator.userAgent}<br>
+            <strong>Platform:</strong> ${navigator.platform}<br>
+            <strong>Is Mobile:</strong> ${/Android|iPhone|iPad/i.test(navigator.userAgent) ? '✅ Yes' : '❌ No'}
+        `;
+
+        // Viewport Info
+        document.getElementById('viewportInfo').innerHTML = `
+            <strong>Screen Size:</strong> ${screen.width} x ${screen.height}<br>
+            <strong>Window Size:</strong> ${window.innerWidth} x ${window.innerHeight}<br>
+            <strong>Device Pixel Ratio:</strong> ${window.devicePixelRatio}
+        `;
+
+        // Check Service Worker
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.getRegistrations().then(registrations => {
+                if (registrations.length > 0) {
+                    document.getElementById('swStatus').innerHTML = `
+                        <strong class="success">✅ Service Worker Active</strong><br>
+                        <strong>Count:</strong> ${registrations.length}<br>
+                        <strong>Scope:</strong> ${registrations[0].scope}
+                    `;
+                } else {
+                    document.getElementById('swStatus').innerHTML = `
+                        <strong class="error">❌ No Service Worker Found</strong>
+                    `;
+                }
+            });
+        } else {
+            document.getElementById('swStatus').innerHTML = `
+                <strong class="error">❌ Service Worker Not Supported</strong>
+            `;
+        }
+
+        // Check Cache
+        if ('caches' in window) {
+            caches.keys().then(cacheNames => {
+                const currentCache = cacheNames.find(name => name.includes('routinemaster'));
+
+                if (currentCache) {
+                    document.getElementById('cacheVersion').textContent = currentCache;
+
+                    if (currentCache.includes('v6')) {
+                        document.getElementById('cacheVersion').classList.add('success');
+                    } else {
+                        document.getElementById('cacheVersion').classList.add('error');
+                    }
+
+                    document.getElementById('cacheStatus').innerHTML = `
+                        <strong class="${currentCache.includes('v6') ? 'success' : 'error'}">
+                            ${currentCache.includes('v6') ? '✅' : '⚠️'} Current Cache: ${currentCache}
+                        </strong><br>
+                        <strong>All Caches:</strong> ${cacheNames.join(', ')}<br>
+                        <span class="${currentCache.includes('v6') ? 'success' : 'warning'}">
+                            ${currentCache.includes('v6') ? '✅ Using Latest Version (v6)' : '⚠️ OLD VERSION - Clear cache!'}
+                        </span>
+                    `;
+                } else {
+                    document.getElementById('cacheVersion').textContent = 'None';
+                    document.getElementById('cacheStatus').innerHTML = `
+                        <strong class="warning">⚠️ No RoutineMaster cache found</strong>
+                    `;
+                }
+            });
+        } else {
+            document.getElementById('cacheStatus').innerHTML = `
+                <strong class="error">❌ Cache API Not Supported</strong>
+            `;
+        }
+
+        // Check CSS Features
+        const supportsBackdrop = CSS.supports('backdrop-filter', 'blur(10px)') || CSS.supports('-webkit-backdrop-filter', 'blur(10px)');
+        const supportsFillAvailable = CSS.supports('height', '-webkit-fill-available');
+
+        document.getElementById('cssFeatures').innerHTML = `
+            <strong>Backdrop Filter:</strong> ${supportsBackdrop ? '✅ Supported' : '❌ Not Supported'}<br>
+            <strong>-webkit-fill-available:</strong> ${supportsFillAvailable ? '✅ Supported' : '❌ Not Supported'}<br>
+            <strong>Touch Action:</strong> ${CSS.supports('touch-action', 'manipulation') ? '✅ Supported' : '❌ Not Supported'}
+        `;
+
+        // Clear All Caches
+        async function clearAllCaches() {
+            if ('caches' in window) {
+                const cacheNames = await caches.keys();
+                await Promise.all(cacheNames.map(name => caches.delete(name)));
+                alert('✅ All caches cleared! Reloading...');
+                location.reload();
+            } else {
+                alert('❌ Cache API not supported');
+            }
+        }
+
+        // Unregister Service Worker
+        async function unregisterServiceWorker() {
+            if ('serviceWorker' in navigator) {
+                const registrations = await navigator.serviceWorker.getRegistrations();
+                await Promise.all(registrations.map(reg => reg.unregister()));
+                alert('✅ Service Worker unregistered! Reloading...');
+                location.reload();
+            } else {
+                alert('❌ Service Worker not supported');
+            }
+        }
+
+        // Hard Reload
+        function hardReload() {
+            location.reload(true);
+        }
+    </script>
+</body>
+
+</html>

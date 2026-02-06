@@ -1,0 +1,57 @@
+import express from 'express';
+import StudyItem from '../models/StudyItem.js';
+
+const router = express.Router();
+
+// Get all study items (hierarchical)
+router.get('/', async (req, res) => {
+    try {
+        const items = await StudyItem.find().sort({ order: 1 });
+        res.json(items);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get children of a specific item
+router.get('/:id/children', async (req, res) => {
+    try {
+        const children = await StudyItem.find({ parentId: req.params.id }).sort({ order: 1 });
+        res.json(children);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Create study item
+router.post('/', async (req, res) => {
+    const item = new StudyItem(req.body);
+    try {
+        const newItem = await item.save();
+        res.status(201).json(newItem);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Update study item
+router.patch('/:id', async (req, res) => {
+    try {
+        const item = await StudyItem.findByIdAndUpdate(req.params.id, req.body, { new: true });
+        res.json(item);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
+});
+
+// Delete study item
+router.delete('/:id', async (req, res) => {
+    try {
+        await StudyItem.findByIdAndDelete(req.params.id);
+        res.json({ message: 'Study item deleted' });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+export default router;
