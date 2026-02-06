@@ -105,7 +105,7 @@
     .mobile-only {
         display: flex !important;
         flex-direction: column;
-        gap: var(--spacing-lg);
+        gap: var(--spacing-md);
         width: 100%;
     }
 
@@ -114,13 +114,13 @@
     }
 
     .dashboard {
-        padding: calc(40px + env(safe-area-inset-top)) var(--spacing-md) calc(100px + env(safe-area-inset-bottom)) !important;
+        padding: calc(20px + env(safe-area-inset-top)) var(--spacing-md) calc(80px + env(safe-area-inset-bottom)) !important;
         background: transparent;
         min-height: 100vh;
         color: var(--color-text-primary);
         display: flex;
         flex-direction: column;
-        gap: var(--spacing-lg);
+        gap: var(--spacing-md);
         overflow-x: hidden;
     }
 
