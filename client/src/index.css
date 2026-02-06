@@ -540,11 +540,11 @@ input[type="date"]::-webkit-calendar-picker-indicator {
     background: rgba(13, 13, 13, 0.85);
   }
 
-  /* Optimize animations for mobile performance */
-  * {
+  /* Optimize animations for mobile performance - removed global wildcard as it breaks position:fixed */
+  /* * {
     -webkit-transform: translateZ(0);
     transform: translateZ(0);
-  }
+  } */
 }
 
 /* Android-specific: Prevent zoom on input focus */
