@@ -9,7 +9,22 @@ import Expenses from './pages/Expenses';
 import Dedication from './pages/Dedication';
 import './App.css';
 
+import { useEffect } from 'react';
+import api from './utils/api';
+
 function App() {
+  useEffect(() => {
+    // Ping the server to wake it up if it's sleeping (Render free tier)
+    const wakeUpServer = async () => {
+      try {
+        await api.get('/health');
+        console.log('Server is awake');
+      } catch (error) {
+        console.log('Waking up server...', error);
+      }
+    };
+    wakeUpServer();
+  }, []);
   return (
     <Router>
       <div className="app">
