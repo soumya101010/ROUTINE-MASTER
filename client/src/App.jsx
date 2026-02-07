@@ -12,6 +12,8 @@ import './App.css';
 import { useEffect } from 'react';
 import api from './utils/api';
 
+import NotificationManager from './components/NotificationManager';
+
 function App() {
   useEffect(() => {
     // Ping the server to wake it up if it's sleeping (Render free tier)
@@ -28,6 +30,7 @@ function App() {
   return (
     <Router>
       <div className="app">
+        <NotificationManager />
         <Navbar />
         <main className="main-content">
           <Routes>
