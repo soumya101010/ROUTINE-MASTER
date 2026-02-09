@@ -102,29 +102,23 @@ export default function Study() {
 
     // Save progress - gets current value from state to avoid stale closure
     const saveProgress = useCallback(async (itemId, progress) => {
-        // Prevent duplicate saves
-        if (savingItems.has(itemId)) return;
-
-        setSavingItems(prev => new Set([...prev, itemId]));
+        // Optimistic update handles the UI. We just send the request.
+        // Removed the locking mechanism (savingItems) to allow rapid updates.
+        // Ideally we would use a debounce or request cancellation here, but for now 
+        // allowing the latest action to trigger a save is better than blocking it.
 
         try {
             await studyAPI.update(itemId, { progress });
         } catch (error) {
             console.error('Error saving progress:', error);
             loadItems(); // Revert on error
-        } finally {
-            setSavingItems(prev => {
-                const newSet = new Set(prev);
-                newSet.delete(itemId);
-                return newSet;
-            });
         }
-    }, [savingItems]);
+    }, []);
 
 
     // ... existing helpers ...
 
-    const CircularSlider = ({ size, value, color, onChange, onCommit }) => {
+    const CircularSlider = ({ size, value, color, onCommit }) => {
         const [isDragging, setIsDragging] = useState(false);
         const [localValue, setLocalValue] = useState(value);
         const valueRef = useRef(value); // Track current value for closure
@@ -141,8 +135,6 @@ export default function Study() {
 
         const displayValue = isDragging ? localValue : value;
 
-        // Calculate knob position based on standard circle (0 degrees at 3 o'clock)
-        // We will rotate the entire SVG group by -90 degrees to start at 12 o'clock
         const angleInRadians = (displayValue / 100) * 360 * (Math.PI / 180);
         const thumbX = center + radius * Math.cos(angleInRadians);
         const thumbY = center + radius * Math.sin(angleInRadians);
@@ -157,8 +149,8 @@ export default function Study() {
 
             let percentage = Math.round((angle / 360) * 100);
             setLocalValue(percentage);
-            valueRef.current = percentage; // Update ref for commit
-            onChange(percentage);
+            valueRef.current = percentage;
+            // Removed onChange call here to prevent global re-render loop
         };
 
         const handleMouseDown = (e) => {
@@ -184,13 +176,14 @@ export default function Study() {
         };
 
         const handleTouchStart = (e) => {
-            e.preventDefault(); // Prevent scrolling while dragging
+            // Important: preventDefault prevents scrolling, and ensures touchmove fires continuously
+            if (e.cancelable) e.preventDefault();
             setIsDragging(true);
             const element = e.currentTarget;
             const rect = element.getBoundingClientRect();
 
             const handleTouchMove = (e) => {
-                e.preventDefault(); // Stop scrolling
+                if (e.cancelable) e.preventDefault();
                 handleInteraction(e.touches[0].clientX, e.touches[0].clientY, rect);
             };
 
@@ -201,16 +194,16 @@ export default function Study() {
                 onCommit(valueRef.current);
             };
 
-            // Use passive: false to allow preventDefault
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
+            // Initial move
             handleInteraction(e.touches[0].clientX, e.touches[0].clientY, rect);
         };
 
         return (
             <div
                 className="circular-slider"
-                style={{ width: size, height: size, cursor: isDragging ? 'grabbing' : 'grab' }}
+                style={{ width: size, height: size, cursor: isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
                 onMouseDown={handleMouseDown}
                 onTouchStart={handleTouchStart}
             >
@@ -242,17 +235,27 @@ export default function Study() {
                                 filter: `drop-shadow(0 0 2px ${color})`
                             }}
                         />
-                        {/* Thumb Knob */}
+                        {/* Invisible Hit Area (Larger) */}
                         <circle
                             cx={thumbX}
                             cy={thumbY}
-                            r="5"
+                            r="20"
+                            fill="transparent"
+                            stroke="none"
+                            style={{ cursor: 'pointer' }}
+                        />
+                        {/* Visible Thumb Knob */}
+                        <circle
+                            cx={thumbX}
+                            cy={thumbY}
+                            r="6"
                             fill="#fff"
                             stroke={color}
                             strokeWidth="2"
                             style={{
                                 filter: `drop-shadow(0 0 3px ${color})`,
-                                transition: isDragging ? 'none' : 'cx 0.3s ease, cy 0.3s ease'
+                                transition: isDragging ? 'none' : 'cx 0.1s ease, cy 0.1s ease',
+                                pointerEvents: 'none' // Let events hit the large transparent circle or svg
                             }}
                         />
                     </g>
@@ -310,8 +313,11 @@ export default function Study() {
                                 size={70}
                                 value={item.progress || 0}
                                 color={typeColors[item.type]}
-                                onChange={(val) => handleProgressChange(item._id, val)}
-                                onCommit={(val) => saveProgress(item._id, val)}
+                                // Removed onChange to avoid re-rendering entire list on drag
+                                onCommit={(val) => {
+                                    handleProgressChange(item._id, val); // Update local state
+                                    saveProgress(item._id, val);         // Save to DB
+                                }}
                             />
                         </div>
                         <button
