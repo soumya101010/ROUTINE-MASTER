@@ -147,8 +147,7 @@ export default function Study() {
         const thumbX = center + radius * Math.cos(angleInRadians);
         const thumbY = center + radius * Math.sin(angleInRadians);
 
-        const handleInteraction = (clientX, clientY, element) => {
-            const rect = element.getBoundingClientRect();
+        const handleInteraction = (clientX, clientY, rect) => {
             const x = clientX - rect.left - center;
             const y = clientY - rect.top - center;
 
@@ -166,9 +165,10 @@ export default function Study() {
             e.preventDefault();
             setIsDragging(true);
             const element = e.currentTarget;
+            const rect = element.getBoundingClientRect();
 
             const handleMouseMove = (e) => {
-                handleInteraction(e.clientX, e.clientY, element);
+                handleInteraction(e.clientX, e.clientY, rect);
             };
 
             const handleMouseUp = () => {
@@ -180,17 +180,18 @@ export default function Study() {
 
             document.addEventListener('mousemove', handleMouseMove);
             document.addEventListener('mouseup', handleMouseUp);
-            handleInteraction(e.clientX, e.clientY, element);
+            handleInteraction(e.clientX, e.clientY, rect);
         };
 
         const handleTouchStart = (e) => {
             e.preventDefault(); // Prevent scrolling while dragging
             setIsDragging(true);
             const element = e.currentTarget;
+            const rect = element.getBoundingClientRect();
 
             const handleTouchMove = (e) => {
-                e.preventDefault();
-                handleInteraction(e.touches[0].clientX, e.touches[0].clientY, element);
+                e.preventDefault(); // Stop scrolling
+                handleInteraction(e.touches[0].clientX, e.touches[0].clientY, rect);
             };
 
             const handleTouchEnd = () => {
@@ -200,9 +201,10 @@ export default function Study() {
                 onCommit(valueRef.current);
             };
 
+            // Use passive: false to allow preventDefault
             document.addEventListener('touchmove', handleTouchMove, { passive: false });
             document.addEventListener('touchend', handleTouchEnd);
-            handleInteraction(e.touches[0].clientX, e.touches[0].clientY, element);
+            handleInteraction(e.touches[0].clientX, e.touches[0].clientY, rect);
         };
 
         return (
