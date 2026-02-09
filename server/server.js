@@ -29,7 +29,13 @@ app.use('/uploads', express.static('uploads', {
 // MongoDB connection
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/routinemaster';
 
-mongoose.connect(MONGODB_URI)
+const clientOptions = {
+    serverSelectionTimeoutMS: 5000,
+    socketTimeoutMS: 45000,
+    family: 4 // Use IPv4, skip IPv6
+};
+
+mongoose.connect(MONGODB_URI, clientOptions)
     .then(() => console.log('✅ Connected to MongoDB'))
     .catch((err) => console.error('❌ MongoDB connection error:', err));
 

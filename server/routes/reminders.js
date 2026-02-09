@@ -3,11 +3,26 @@ import Reminder from '../models/Reminder.js';
 
 const router = express.Router();
 
-// Get all reminders
+// Get all reminders (Paginated)
 router.get('/', async (req, res) => {
     try {
-        const reminders = await Reminder.find().sort({ time: 1 });
-        res.json(reminders);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const reminders = await Reminder.find()
+            .sort({ time: 1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Reminder.countDocuments();
+
+        res.json({
+            data: reminders,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalItems: total
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

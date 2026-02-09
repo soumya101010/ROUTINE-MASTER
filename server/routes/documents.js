@@ -9,11 +9,26 @@ const router = express.Router();
 // Configure multer for file uploads using Cloudinary storage
 const upload = multer({ storage: storage });
 
-// Get all documents
+// Get all documents (Paginated)
 router.get('/', async (req, res) => {
     try {
-        const documents = await Document.find().sort({ uploadDate: -1 });
-        res.json(documents);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const documents = await Document.find()
+            .sort({ uploadDate: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Document.countDocuments();
+
+        res.json({
+            data: documents,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalItems: total
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }

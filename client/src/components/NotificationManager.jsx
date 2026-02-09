@@ -2,21 +2,34 @@ import { useEffect, useState } from 'react';
 import { reminderAPI } from '../utils/api';
 import { Bell } from 'lucide-react';
 import './NotificationManager.css';
+import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
 
 export default function NotificationManager() {
     const [permission, setPermission] = useState('default');
     const [showPermissionBanner, setShowPermissionBanner] = useState(false);
     const [lastCheckedMinute, setLastCheckedMinute] = useState(null);
+    const isNative = Capacitor.isNativePlatform();
 
     useEffect(() => {
         // Check initial permission
-        if ('Notification' in window) {
+        checkPermission();
+    }, []);
+
+    const checkPermission = async () => {
+        if (isNative) {
+            const status = await LocalNotifications.checkPermissions();
+            setPermission(status.display);
+            if (status.display !== 'granted') {
+                setShowPermissionBanner(true);
+            }
+        } else if ('Notification' in window) {
             setPermission(Notification.permission);
             if (Notification.permission === 'default') {
                 setShowPermissionBanner(true);
             }
         }
-    }, []);
+    };
 
     useEffect(() => {
         // Check for reminders every 10 seconds
@@ -25,26 +38,43 @@ export default function NotificationManager() {
         }, 10000);
 
         return () => clearInterval(intervalId);
-    }, [permission, lastCheckedMinute]); // Re-run if these change
+    }, [permission, lastCheckedMinute]);
 
     const requestPermission = async () => {
-        if (!('Notification' in window)) {
-            alert('This browser does not support desktop notification');
-            return;
-        }
-
-        try {
-            const result = await Notification.requestPermission();
-            setPermission(result);
-            if (result === 'granted') {
-                setShowPermissionBanner(false);
-                new Notification('Notifications Enabled', {
-                    body: 'You will now receive reminders!',
-                    icon: '/icon-192.png'
-                });
+        if (isNative) {
+            try {
+                const result = await LocalNotifications.requestPermissions();
+                setPermission(result.display);
+                if (result.display === 'granted') {
+                    setShowPermissionBanner(false);
+                    scheduleNotification({
+                        title: 'Notifications Enabled',
+                        body: 'You will now receive reminders!',
+                        id: 99999
+                    });
+                }
+            } catch (error) {
+                console.error('Error requesting native permission:', error);
             }
-        } catch (error) {
-            console.error('Error requesting permission:', error);
+        } else {
+            if (!('Notification' in window)) {
+                alert('This browser does not support desktop notification');
+                return;
+            }
+
+            try {
+                const result = await Notification.requestPermission();
+                setPermission(result);
+                if (result === 'granted') {
+                    setShowPermissionBanner(false);
+                    new Notification('Notifications Enabled', {
+                        body: 'You will now receive reminders!',
+                        icon: '/icon-192.png'
+                    });
+                }
+            } catch (error) {
+                console.error('Error requesting permission:', error);
+            }
         }
     };
 
@@ -54,35 +84,27 @@ export default function NotificationManager() {
         const now = new Date();
         const currentMinute = now.getMinutes();
         const currentHour = now.getHours();
-        const currentDay = now.getDay(); // 0 is Sunday, 6 is Saturday
+        const currentDay = now.getDay();
 
-        // avoid double checking in the same minute
         if (lastCheckedMinute === currentMinute) return;
 
-        // Format current time as HH:MM
         const timeString = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
 
-        console.log(`Checking reminders for ${timeString} on day ${currentDay}`);
+        console.log(`Checking reminders for ${timeString}`);
         setLastCheckedMinute(currentMinute);
 
         try {
             const { data: reminders } = await reminderAPI.getAll();
 
             reminders.forEach(reminder => {
-                // Check if active, matches time, and matches day (if days specified)
-                // If daysOfWeek is empty, assume it triggers every day (or maybe handling logic needs to be verified? 
-                // In Reminders.jsx: formData.daysOfWeek is array. Empty array usually means no repeat or one-off? 
-                // Let's assume empty array = one-off or everyday? 
-                // Looking at user UI, they select days.
-                // If the user selects specific days, we check. If they select NOTHING, maybe it shouldn't fire?
-                // Or maybe it fires once? But we don't track "fired" state for one-offs yet.
-                // For now, let's assume empty daysOfWeek means "Daily" or handle explicit matches.
-                // The Reminders.jsx logic shows "days" badges only if length > 0.
-
                 const matchesDay = reminder.daysOfWeek.length === 0 || reminder.daysOfWeek.includes(currentDay);
 
                 if (reminder.isActive !== false && reminder.time === timeString && matchesDay) {
-                    showNotification(reminder);
+                    scheduleNotification({
+                        title: reminder.title,
+                        body: reminder.description || 'Time for your reminder!',
+                        id: dateToId(reminder._id) // simple hash or just use timestamp if needed, but ID is string
+                    });
                 }
             });
 
@@ -91,30 +113,60 @@ export default function NotificationManager() {
         }
     };
 
-    const showNotification = (reminder) => {
-        // Double check permission (redundant but safe)
-        if (Notification.permission === 'granted') {
+    const dateToId = (str) => {
+        // Simple hash to get an integer ID for LocalNotifications
+        let hash = 0;
+        for (let i = 0; i < str.length; i++) {
+            const char = str.charCodeAt(i);
+            hash = ((hash << 5) - hash) + char;
+            hash = hash & hash;
+        }
+        return Math.abs(hash);
+    };
+
+    const scheduleNotification = async (reminder) => {
+        if (isNative) {
             try {
-                // Use service worker registration if available for better mobile support
-                if (navigator.serviceWorker && navigator.serviceWorker.ready) {
-                    navigator.serviceWorker.ready.then(registration => {
-                        registration.showNotification(reminder.title, {
-                            body: reminder.description || 'Time for your reminder!',
-                            icon: '/icon-192.png',
-                            vibrate: [200, 100, 200],
-                            tag: `reminder-${reminder._id}` // Prevent duplicate notifications
-                        });
-                    });
-                } else {
-                    // Fallback to standard API
-                    new Notification(reminder.title, {
-                        body: reminder.description || 'Time for your reminder!',
-                        icon: '/icon-192.png',
-                        tag: `reminder-${reminder._id}`
-                    });
-                }
+                await LocalNotifications.schedule({
+                    notifications: [
+                        {
+                            title: reminder.title,
+                            body: reminder.body,
+                            id: reminder.id,
+                            schedule: { at: new Date(Date.now() + 1000) }, // Show roughly immediately
+                            sound: 'beep.wav',
+                            attachments: null,
+                            actionTypeId: "",
+                            extra: null
+                        }
+                    ]
+                });
             } catch (e) {
-                console.error("Notification trigger failed", e);
+                console.error("Native notification failed", e);
+            }
+        } else {
+            // Web fallback
+            if (Notification.permission === 'granted') {
+                try {
+                    if (navigator.serviceWorker && navigator.serviceWorker.ready) {
+                        navigator.serviceWorker.ready.then(registration => {
+                            registration.showNotification(reminder.title, {
+                                body: reminder.body,
+                                icon: '/icon-192.png',
+                                vibrate: [200, 100, 200],
+                                tag: `reminder-${reminder.id}`
+                            });
+                        });
+                    } else {
+                        new Notification(reminder.title, {
+                            body: reminder.body,
+                            icon: '/icon-192.png',
+                            tag: `reminder-${reminder.id}`
+                        });
+                    }
+                } catch (e) {
+                    console.error("Notification trigger failed", e);
+                }
             }
         }
     };

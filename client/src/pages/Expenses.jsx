@@ -92,43 +92,50 @@ export default function Expenses() {
     };
 
     useEffect(() => {
-        loadTransactions();
+        loadData();
     }, []);
 
-    const loadTransactions = async () => {
+    const loadData = async () => {
         try {
-            const response = await expenseAPI.getAll();
-            setTransactions(response.data);
-            calculateSummary(response.data);
+            const [transactionsRes, statsRes] = await Promise.all([
+                expenseAPI.getAll(1, 20),
+                expenseAPI.getDashboardStats()
+            ]);
+
+            setTransactions(transactionsRes.data.data);
+
+            // Process stats for summary
+            const globalStats = statsRes.data.global;
+            const categoryStats = statsRes.data.globalCategories;
+
+            const newSummary = {
+                totalIncome: globalStats.totalIncome || 0,
+                totalExpense: globalStats.totalExpense || 0,
+                balance: (globalStats.totalIncome || 0) - (globalStats.totalExpense || 0),
+                hobby: 0,
+                necessary: 0,
+                salary: 0,
+                freelance: 0,
+                other: 0
+            };
+
+            categoryStats.forEach(cat => {
+                if (newSummary.hasOwnProperty(cat._id)) {
+                    newSummary[cat._id] = cat.total;
+                }
+            });
+
+            setSummary(newSummary);
+
         } catch (error) {
-            console.error('Error loading transactions:', error);
+            console.error('Error loading data:', error);
         }
     };
 
+    // Removed client-side calculateSummary as we now use server stats
     const calculateSummary = (data) => {
-        const summary = {
-            totalIncome: 0,
-            totalExpense: 0,
-            balance: 0,
-            hobby: 0,
-            necessary: 0,
-            salary: 0,
-            freelance: 0,
-            other: 0
-        };
-
-        data.forEach(item => {
-            if (item.type === 'income') {
-                summary.totalIncome += item.amount;
-                summary[item.category] = (summary[item.category] || 0) + item.amount;
-            } else {
-                summary.totalExpense += item.amount;
-                summary[item.category] = (summary[item.category] || 0) + item.amount;
-            }
-        });
-
-        summary.balance = summary.totalIncome - summary.totalExpense;
-        setSummary(summary);
+        // Legacy function kept if needed for optimistic updates, 
+        // but generally we should reload stats or update state manually
     };
 
     const handleSubmit = async (e) => {
@@ -143,10 +150,23 @@ export default function Expenses() {
             const response = await expenseAPI.create(transactionData);
             console.log('Transaction created successfully:', response.data);
 
-            // Update local state without refetching
+            // Update local state without refetching (simple append)
+            // Note: This won't update the global summary stats immediately unless we refetch or incorrectly calc
             const newTransactions = [response.data, ...transactions];
             setTransactions(newTransactions);
-            calculateSummary(newTransactions);
+
+            // Simple manual update for UI responsiveness
+            setSummary(prev => {
+                const amount = parseFloat(transactionData.amount);
+                const isIncome = transactionData.type === 'income';
+                return {
+                    ...prev,
+                    totalIncome: isIncome ? prev.totalIncome + amount : prev.totalIncome,
+                    totalExpense: !isIncome ? prev.totalExpense + amount : prev.totalExpense,
+                    balance: isIncome ? prev.balance + amount : prev.balance - amount,
+                    [transactionData.category]: (prev[transactionData.category] || 0) + amount
+                };
+            });
 
             setShowForm(false);
             setFormData({
@@ -169,9 +189,23 @@ export default function Expenses() {
         try {
             await expenseAPI.delete(id);
             // Update local state without refetching
+            const deletedTransaction = transactions.find(t => t._id === id);
             const newTransactions = transactions.filter(t => t._id !== id);
             setTransactions(newTransactions);
-            calculateSummary(newTransactions);
+
+            if (deletedTransaction) {
+                setSummary(prev => {
+                    const amount = deletedTransaction.amount;
+                    const isIncome = deletedTransaction.type === 'income';
+                    return {
+                        ...prev,
+                        totalIncome: isIncome ? prev.totalIncome - amount : prev.totalIncome,
+                        totalExpense: !isIncome ? prev.totalExpense - amount : prev.totalExpense,
+                        balance: isIncome ? prev.balance - amount : prev.balance + amount,
+                        [deletedTransaction.category]: (prev[deletedTransaction.category] || 0) - amount
+                    };
+                });
+            }
         } catch (error) {
             console.error('Error deleting transaction:', error);
         }

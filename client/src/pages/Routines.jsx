@@ -23,7 +23,7 @@ export default function Routines() {
     const loadRoutines = async () => {
         try {
             const response = await routineAPI.getAll();
-            setRoutines(response.data);
+            setRoutines(response.data.data);
         } catch (error) {
             console.error('Error loading routines:', error);
         }

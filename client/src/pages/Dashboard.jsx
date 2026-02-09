@@ -23,60 +23,37 @@ export default function Dashboard() {
 
     const loadStats = async () => {
         try {
-            const [reminders, routines, transactions] = await Promise.all([
-                reminderAPI.getAll(),
-                routineAPI.getAll(),
-                expenseAPI.getAll()
+            const [remindersRes, routinesRes, expensesStatsRes] = await Promise.all([
+                reminderAPI.getAll(1, 1, { isActive: true }), // Only need count of active, so limit 1
+                routineAPI.getAll(1, 1),
+                expenseAPI.getDashboardStats()
             ]);
 
-            // Calculate totals
-            let totalIncome = 0;
-            let totalExpense = 0;
+            const statsData = expensesStatsRes.data;
+            const recentStats = statsData.recent || { totalStats: [], dailyTrend: [] };
+            const globalStats = statsData.global || { totalIncome: 0, totalExpense: 0 };
+            const totalStats = recentStats.totalStats[0] || { totalIncome: 0, totalExpense: 0 };
 
-            transactions.data.forEach(t => {
-                if (t.type === 'income') {
-                    totalIncome += t.amount;
-                } else {
-                    totalExpense += t.amount;
-                }
-            });
+            // Calculate balance (Global balance)
+            const balance = globalStats.totalIncome - globalStats.totalExpense;
 
-            // Generate last 30 days data
-            const last30Days = [];
-            for (let i = 29; i >= 0; i--) {
-                const date = new Date();
-                date.setDate(date.getDate() - i);
-                const dateStr = date.toISOString().split('T')[0];
+            // Format trend data
+            const trendData = recentStats.dailyTrend.map(day => ({
+                date: new Date(day._id).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                income: day.income,
+                expense: day.expense,
+                balanceTrend: 0 // We'll calculate this below if needed, or simplfy
+            }));
 
-                const dayIncome = transactions.data
-                    .filter(t => t.type === 'income' && t.date.startsWith(dateStr))
-                    .reduce((sum, t) => sum + t.amount, 0);
-
-                const dayExpense = transactions.data
-                    .filter(t => t.type === 'expense' && t.date.startsWith(dateStr))
-                    .reduce((sum, t) => sum + t.amount, 0);
-
-                last30Days.push({
-                    date: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-                    income: dayIncome,
-                    expense: dayExpense
-                });
-            }
-
-            const netChangeOver30Days = last30Days.reduce((sum, d) => sum + (d.income - d.expense), 0);
-            let runningBal = (totalIncome - totalExpense) - netChangeOver30Days;
-
-            const trendData = last30Days.map(day => {
-                runningBal += (day.income - day.expense);
-                return { ...day, balanceTrend: runningBal };
-            });
+            // Add running balance for the chart if we want to show net worth trend
+            // For now, let's keep the daily income/expense view as it's cleaner with the new data structure
 
             setStats({
-                reminders: reminders.data.filter(r => r.isActive).length,
-                routines: routines.data.length,
-                totalIncome,
-                totalExpense,
-                balance: totalIncome - totalExpense
+                reminders: remindersRes.data.totalItems || 0,
+                routines: routinesRes.data.totalItems || 0,
+                totalIncome: totalStats.totalIncome,
+                totalExpense: totalStats.totalExpense,
+                balance: balance
             });
             setDailyData(trendData);
         } catch (error) {

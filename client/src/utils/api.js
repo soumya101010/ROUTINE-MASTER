@@ -24,7 +24,11 @@ api.interceptors.response.use(
 
 // Reminders
 export const reminderAPI = {
-    getAll: () => api.get('/reminders'),
+    getAll: (page = 1, limit = 1000, filters = {}) => {
+        let query = `/reminders?page=${page}&limit=${limit}`;
+        if (filters.isActive !== undefined) query += `&isActive=${filters.isActive}`;
+        return api.get(query);
+    },
     create: (data) => api.post('/reminders', data),
     update: (id, data) => api.patch(`/reminders/${id}`, data),
     delete: (id) => api.delete(`/reminders/${id}`)
@@ -32,7 +36,7 @@ export const reminderAPI = {
 
 // Routines
 export const routineAPI = {
-    getAll: () => api.get('/routines'),
+    getAll: (page = 1, limit = 1000) => api.get(`/routines?page=${page}&limit=${limit}`),
     create: (data) => api.post('/routines', data),
     update: (id, data) => api.patch(`/routines/${id}`, data),
     delete: (id) => api.delete(`/routines/${id}`)
@@ -50,7 +54,8 @@ export const studyAPI = {
 
 // Expenses
 export const expenseAPI = {
-    getAll: () => api.get('/expenses'),
+    getAll: (page = 1, limit = 20) => api.get(`/expenses?page=${page}&limit=${limit}`),
+    getDashboardStats: () => api.get('/expenses/dashboard-stats'),
     getSummary: (year, month) => api.get(`/expenses/summary/${year}/${month}`),
     create: (data) => api.post('/expenses', data),
     update: (id, data) => api.patch(`/expenses/${id}`, data),
@@ -59,7 +64,7 @@ export const expenseAPI = {
 
 // Documents
 export const documentAPI = {
-    getAll: () => api.get('/documents'),
+    getAll: (page = 1, limit = 20) => api.get(`/documents?page=${page}&limit=${limit}`),
     upload: (formData) => api.post('/documents', formData, {
         headers: { 'Content-Type': 'multipart/form-data' }
     }),

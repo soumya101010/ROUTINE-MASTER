@@ -26,7 +26,7 @@ export default function Documents() {
     const loadDocuments = async () => {
         try {
             const response = await documentAPI.getAll();
-            setDocuments(response.data);
+            setDocuments(response.data.data);
         } catch (error) {
             console.error('Error loading documents:', error);
         }

@@ -1,0 +1,22 @@
+{
+    "appId": "com.routinemaster.app",
+    "appName": "RoutineMaster",
+    "webDir": "dist",
+    "server": {
+        "androidScheme": "https"
+    },
+    "plugins": {
+        "SplashScreen": {
+            "backgroundColor": "#000000",
+            "launchShowDuration": 3000,
+            "launchAutoHide": true,
+            "androidSplashResourceName": "splash",
+            "showSpinner": false
+        },
+        "LocalNotifications": {
+            "smallIcon": "ic_stat_icon_config_sample",
+            "iconColor": "#488AFF",
+            "sound": "beep.wav"
+        }
+    }
+}

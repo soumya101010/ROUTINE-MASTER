@@ -3,11 +3,25 @@ import Routine from '../models/Routine.js';
 
 const router = express.Router();
 
-// Get all routines
+// Get all routines (Paginated)
 router.get('/', async (req, res) => {
     try {
-        const routines = await Routine.find();
-        res.json(routines);
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const routines = await Routine.find()
+            .skip(skip)
+            .limit(limit);
+
+        const total = await Routine.countDocuments();
+
+        res.json({
+            data: routines,
+            currentPage: page,
+            totalPages: Math.ceil(total / limit),
+            totalItems: total
+        });
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
