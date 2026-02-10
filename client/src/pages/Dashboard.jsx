@@ -38,12 +38,33 @@ export default function Dashboard() {
             const balance = globalStats.totalIncome - globalStats.totalExpense;
 
             // Format trend data
-            const trendData = recentStats.dailyTrend.map(day => ({
-                date: new Date(day._id).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+            // Format trend data
+            let runningBalance = balance;
+            // Calculate starting balance by subtracting all recent changes
+            // Note: This assumes dailyTrend (last 30 days) matches the recent activity flow.
+            // We iterate backwards to establish the trend curve relative to current balance.
+
+            // First, map data to basic structure
+            const mappedData = recentStats.dailyTrend.map(day => ({
+                id: day._id,
                 income: day.income,
                 expense: day.expense,
-                balanceTrend: 0 // We'll calculate this below if needed, or simplfy
+                net: day.income - day.expense
             }));
+
+            // We need to build the trend forward, so we need the balance at the start of the period.
+            const totalRecentChange = mappedData.reduce((acc, curr) => acc + curr.net, 0);
+            let currentTrendBalance = balance - totalRecentChange;
+
+            const trendData = mappedData.map(day => {
+                currentTrendBalance += day.net;
+                return {
+                    date: new Date(day.id).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                    income: day.income,
+                    expense: day.expense,
+                    balanceTrend: currentTrendBalance
+                };
+            });
 
             // Add running balance for the chart if we want to show net worth trend
             // For now, let's keep the daily income/expense view as it's cleaner with the new data structure
