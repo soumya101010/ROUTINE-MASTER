@@ -102,7 +102,8 @@ export default function Expenses() {
                 expenseAPI.getDashboardStats()
             ]);
 
-            setTransactions(transactionsRes.data.data);
+            const txData = transactionsRes.data.data || transactionsRes.data;
+            setTransactions(Array.isArray(txData) ? txData : []);
 
             // Process stats for summary
             const globalStats = statsRes.data.global;
@@ -150,10 +151,8 @@ export default function Expenses() {
             const response = await expenseAPI.create(transactionData);
             console.log('Transaction created successfully:', response.data);
 
-            // Update local state without refetching (simple append)
-            // Note: This won't update the global summary stats immediately unless we refetch or incorrectly calc
-            const newTransactions = [response.data, ...transactions];
-            setTransactions(newTransactions);
+            // Update local state avoiding stale closures
+            setTransactions(prev => [response.data, ...prev]);
 
             // Simple manual update for UI responsiveness
             setSummary(prev => {
@@ -190,8 +189,7 @@ export default function Expenses() {
             await expenseAPI.delete(id);
             // Update local state without refetching
             const deletedTransaction = transactions.find(t => t._id === id);
-            const newTransactions = transactions.filter(t => t._id !== id);
-            setTransactions(newTransactions);
+            setTransactions(prev => prev.filter(t => t._id !== id));
 
             if (deletedTransaction) {
                 setSummary(prev => {
