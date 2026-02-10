@@ -10,6 +10,7 @@ import routineRoutes from './routes/routines.js';
 import studyRoutes from './routes/study.js';
 import expenseRoutes from './routes/expenses.js';
 import documentRoutes from './routes/documents.js';
+import attendanceRoutes from './routes/attendance.js';
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ app.use('/api/routines', routineRoutes);
 app.use('/api/study', studyRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/documents', documentRoutes);
+app.use('/api/attendance', attendanceRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

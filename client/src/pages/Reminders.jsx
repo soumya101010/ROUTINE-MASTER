@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Bell, Clock } from 'lucide-react';
+import { Plus, Trash2, Bell, Clock, Calendar } from 'lucide-react';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
 import { reminderAPI } from '../utils/api';
@@ -119,6 +119,15 @@ export default function Reminders() {
                         </div>
 
                         <div className="form-group">
+                            <label>Date (Optional)</label>
+                            <input
+                                type="date"
+                                value={formData.date || ''}
+                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                            />
+                        </div>
+
+                        <div className="form-group">
                             <label>Time</label>
                             <div className="time-input-wrapper">
                                 <Clock size={18} className="time-icon" />
@@ -131,8 +140,9 @@ export default function Reminders() {
                             </div>
                         </div>
 
+
                         <div className="form-group">
-                            <label>Days of Week</label>
+                            <label>Days of Week (Repeats)</label>
                             <div className="days-selector">
                                 {days.map((day, index) => (
                                     <button
@@ -157,7 +167,8 @@ export default function Reminders() {
                         </div>
                     </form>
                 </Card>
-            )}
+            )
+            }
 
             <GravityContainer className="reminders-grid">
                 {reminders.map((reminder) => (
@@ -180,6 +191,12 @@ export default function Reminders() {
                                 <Clock size={16} />
                                 <span>{reminder.time}</span>
                             </div>
+                            {reminder.date && (
+                                <div className="meta-item">
+                                    <Calendar size={16} />
+                                    <span>{new Date(reminder.date).toLocaleDateString()}</span>
+                                </div>
+                            )}
                             <span className="reminder-type">{reminder.type}</span>
                         </div>
                         {reminder.daysOfWeek.length > 0 && (
@@ -193,13 +210,15 @@ export default function Reminders() {
                 ))}
             </GravityContainer>
 
-            {reminders.length === 0 && !showForm && (
-                <div className="empty-state">
-                    <Bell size={64} className="text-gradient" />
-                    <h3>No reminders yet</h3>
-                    <p>Create your first reminder to get started</p>
-                </div>
-            )}
-        </div>
+            {
+                reminders.length === 0 && !showForm && (
+                    <div className="empty-state">
+                        <Bell size={64} className="text-gradient" />
+                        <h3>No reminders yet</h3>
+                        <p>Create your first reminder to get started</p>
+                    </div>
+                )
+            }
+        </div >
     );
 }

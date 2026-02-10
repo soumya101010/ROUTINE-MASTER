@@ -6,6 +6,7 @@ import Routines from './pages/Routines';
 import Study from './pages/Study';
 import Documents from './pages/Documents';
 import Expenses from './pages/Expenses';
+import Attendance from './pages/Attendance';
 import Dedication from './pages/Dedication';
 import './App.css';
 
@@ -40,6 +41,7 @@ function App() {
             <Route path="/study" element={<Study />} />
             <Route path="/documents" element={<Documents />} />
             <Route path="/expenses" element={<Expenses />} />
+            <Route path="/attendance" element={<Attendance />} />
             <Route path="/dedication" element={<Dedication />} />
           </Routes>
         </main>

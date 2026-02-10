@@ -75,4 +75,11 @@ export const documentAPI = {
     delete: (id) => api.delete(`/documents/${id}`)
 };
 
+// Attendance
+export const attendanceAPI = {
+    getAll: (page = 1, limit = 20) => api.get(`/attendance?page=${page}&limit=${limit}`),
+    create: (data) => api.post('/attendance', data),
+    delete: (id) => api.delete(`/attendance/${id}`)
+};
+
 export default api;

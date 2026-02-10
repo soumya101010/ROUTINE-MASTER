@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Calendar, BookOpen, FileText, DollarSign, TrendingUp, Heart } from 'lucide-react';
+import { Bell, Calendar, BookOpen, FileText, DollarSign, TrendingUp, Heart, CheckSquare } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
@@ -119,6 +119,13 @@ export default function Dashboard() {
             title: 'Income & Expenses',
             description: `Balance: ₹${stats.balance.toFixed(0)}`,
             color: stats.balance >= 0 ? '#10b981' : '#ef4444'
+        },
+        {
+            to: '/attendance',
+            icon: CheckSquare,
+            title: 'Attendance',
+            description: 'Track your classes',
+            color: '#8b5cf6'
         }
     ];
 
@@ -199,7 +206,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="dashboard-grid">
-                    {quickLinks.slice(0, 4).map((link) => (
+                    {quickLinks.slice(0, 6).map((link) => (
                         <Link key={link.to} to={link.to} className="dashboard-link">
                             <Card className="dashboard-card mini">
                                 <div className="mini-card-header">
