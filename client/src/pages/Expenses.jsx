@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, Search } from 'lucide-react';
 import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, Sector } from 'recharts';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
@@ -74,6 +74,7 @@ export default function Expenses() {
     const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, balance: 0, hobby: 0, necessary: 0, salary: 0, freelance: 0, other: 0 });
     const [activeIndexExpense, setActiveIndexExpense] = useState(0);
     const [activeIndexIncome, setActiveIndexIncome] = useState(0);
+    const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
         title: '',
         amount: '',
@@ -98,7 +99,7 @@ export default function Expenses() {
     const loadData = async () => {
         try {
             const [transactionsRes, statsRes] = await Promise.all([
-                expenseAPI.getAll(1, 20),
+                expenseAPI.getAll(1, 1000), // Increased limit to fetch all records
                 expenseAPI.getDashboardStats()
             ]);
 
@@ -219,6 +220,11 @@ export default function Expenses() {
         { name: 'Freelance', value: summary.freelance, color: '#6d28d9' },
         { name: 'Other', value: summary.other, color: '#5b21b6' }
     ];
+
+    const filteredTransactions = transactions.filter(t =>
+        t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.amount.toString().includes(searchTerm)
+    );
 
     return (
         <div className="expenses-page">
@@ -431,9 +437,29 @@ export default function Expenses() {
             </div>
 
             <div className="expenses-list">
-                <h3>Recent Transactions</h3>
+                <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3>Recent Transactions</h3>
+                    <div className="search-bar" style={{ position: 'relative', width: '250px' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)' }} />
+                        <input
+                            type="text"
+                            placeholder="Search..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{
+                                width: '100%',
+                                padding: '8px 10px 8px 36px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '8px',
+                                color: 'white',
+                                outline: 'none'
+                            }}
+                        />
+                    </div>
+                </div>
                 <GravityContainer className="expenses-grid">
-                    {transactions.slice(0, 10).map((transaction) => (
+                    {filteredTransactions.map((transaction) => (
                         <Card key={transaction._id} className={`expense-card ${transaction.type}`}>
                             <div className="expense-header">
                                 <h4>{transaction.title}</h4>
@@ -465,11 +491,11 @@ export default function Expenses() {
                 </GravityContainer>
             </div>
 
-            {transactions.length === 0 && !showForm && (
+            {filteredTransactions.length === 0 && !showForm && (
                 <div className="empty-state">
                     <DollarSign size={64} className="text-gradient" />
-                    <h3>No transactions yet</h3>
-                    <p>Start tracking your income and expenses</p>
+                    <h3>No transactions found</h3>
+                    <p>{searchTerm ? 'Try a different search term' : 'Start tracking your income and expenses'}</p>
                 </div>
             )}
         </div>
