@@ -140,6 +140,7 @@ export default function Dashboard() {
                         <div className="featured-chart-overlay">
                             <ResponsiveContainer width="100%" height={120}>
                                 <AreaChart data={dailyData.slice(-15)} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
+                                    <YAxis domain={['dataMin', 'dataMax']} hide />
                                     <Tooltip
                                         content={({ active, payload }) => {
                                             if (active && payload && payload.length) {
