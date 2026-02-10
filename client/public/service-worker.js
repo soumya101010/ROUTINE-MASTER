@@ -24,6 +24,11 @@ self.addEventListener('install', event => {
 self.addEventListener('fetch', event => {
     const { request } = event;
 
+    // Ignore API requests - let them go straight to network
+    if (request.url.includes('/api/')) {
+        return;
+    }
+
     // For navigation requests (HTML pages), always use network first
     if (request.mode === 'navigate' || request.destination === 'document') {
         event.respondWith(
