@@ -256,6 +256,7 @@
 @media (max-width: 768px) {
     .study-page {
         padding: var(--spacing-md);
+        padding-bottom: 120px;
     }
 
     .page-header {
@@ -269,13 +270,15 @@
     }
 
     .study-item-content {
-        flex-direction: row; /* Keep row layout */
+        flex-direction: row;
+        /* Keep row layout */
         align-items: center;
         gap: var(--spacing-sm);
     }
 
     .study-item-right {
-        width: auto; /* Let it take only needed space */
+        width: auto;
+        /* Let it take only needed space */
         justify-content: flex-end;
         gap: var(--spacing-md);
     }

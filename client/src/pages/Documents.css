@@ -229,6 +229,7 @@
 @media (max-width: 768px) {
     .documents-page {
         padding: var(--spacing-md);
+        padding-bottom: 120px;
     }
 
     .page-header {

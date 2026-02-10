@@ -160,7 +160,8 @@
 @media (max-width: 768px) {
     .expenses-page {
         padding: var(--spacing-md);
-        padding-bottom: 100px; /* Ensure content is visible above fixed navbar */
+        padding-bottom: 120px;
+        /* Ensure content is visible above fixed navbar */
     }
 
     .form-row {

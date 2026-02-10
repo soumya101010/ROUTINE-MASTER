@@ -16,7 +16,7 @@
     align-items: center;
     justify-content: flex-start;
     /* Start from top */
-    padding: 80px 20px 40px;
+    padding: 80px 20px 120px;
     /* Space for close button and bottom */
     z-index: 2000;
     font-family: 'Inter', sans-serif;
