@@ -338,12 +338,13 @@ export default function Study() {
     return (
         <div className="study-page">
             <div className="page-header">
-                <h1 className="text-gradient">Study Tracker</h1>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                    <Plus size={20} />
-                    Add {formData.parentId ? (formData.type === 'chapter' ? 'Chapter' : 'Topic') : 'Subject'}
-                </button>
+                <h1 className="module-title text-gradient">Study Tracker</h1>
             </div>
+
+            <button className="btn btn-primary add-button" onClick={() => setShowForm(!showForm)}>
+                <Plus size={20} />
+                Add {formData.parentId ? (formData.type === 'chapter' ? 'Chapter' : 'Topic') : 'Subject'}
+            </button>
 
             {showForm && (
                 <Card className="study-form">

@@ -1,14 +1,25 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, Calendar, BookOpen, CheckCircle, XCircle } from 'lucide-react';
-import GravityContainer from '../components/GravityContainer';
+import { Plus, Trash2, Calendar, BookOpen, CheckCircle, XCircle, ChevronLeft, ChevronRight, ArrowLeft } from 'lucide-react';
 import Card from '../components/Card';
 import { attendanceAPI } from '../utils/api';
-import './Reminders.css'; // Reusing Reminders CSS for consistency
+import { formatMonthYear, getPreviousMonth, getNextMonth } from '../utils/dateHelpers';
+import './Attendance.css';
 
 export default function Attendance() {
-    const [stats, setStats] = useState({ totalClasses: 0, theory: 0, practical: 0, present: 0, absent: 0 });
-    const [attendanceList, setAttendanceList] = useState([]);
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [records, setRecords] = useState([]);
+    const [subjectStats, setSubjectStats] = useState([]);
+    const [overallStats, setOverallStats] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+
+    // View state: 'summary' or 'detail'
+    const [view, setView] = useState('summary');
+    const [selectedSubject, setSelectedSubject] = useState(null);
+
+    // Form states
     const [showForm, setShowForm] = useState(false);
+    const [formStep, setFormStep] = useState(1);
     const [formData, setFormData] = useState({
         date: new Date().toISOString().split('T')[0],
         subject: '',
@@ -18,179 +29,353 @@ export default function Attendance() {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [currentDate]);
 
     const loadData = async () => {
+        setLoading(true);
+        setError(null);
         try {
-            const response = await attendanceAPI.getAll(1, 100);
-            setAttendanceList(response.data.data || []);
-            setStats(response.data.stats || { totalClasses: 0, theory: 0, practical: 0, present: 0, absent: 0 });
-        } catch (error) {
-            console.error('Error loading attendance:', error);
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1;
+            console.log('Fetching attendance for', year, month);
+            const res = await attendanceAPI.getMonthly(year, month);
+            console.log('Attendance response:', res.data);
+
+            setRecords(Array.isArray(res.data?.records) ? res.data.records : []);
+            setSubjectStats(Array.isArray(res.data?.subjectStats) ? res.data.subjectStats : []);
+            setOverallStats(res.data?.overallStats || null);
+        } catch (err) {
+            console.error('Attendance load error:', err);
+            console.error('Error response:', err.response?.data);
+            console.error('Error status:', err.response?.status);
+            setError(`Failed to load attendance data. ${err.message}`);
+        } finally {
+            setLoading(false);
         }
     };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
+    // Month navigation
+    const handlePrevMonth = () => {
+        setCurrentDate(getPreviousMonth(currentDate));
+        setView('summary');
+        setSelectedSubject(null);
+    };
+    const handleNextMonth = () => {
+        setCurrentDate(getNextMonth(currentDate));
+        setView('summary');
+        setSelectedSubject(null);
+    };
+
+    // Subject drill-down
+    const openSubjectDetail = (subjectName) => {
+        setSelectedSubject(subjectName);
+        setView('detail');
+    };
+    const backToSummary = () => {
+        setView('summary');
+        setSelectedSubject(null);
+    };
+
+    // Form logic
+    const uniqueSubjects = [...new Set(records.map(r => r.subject).filter(Boolean))];
+
+    const handleSubjectSelect = (subject) => {
+        setFormData({ ...formData, subject });
+        setFormStep(2);
+    };
+    const handleTypeSelect = (type) => {
+        setFormData({ ...formData, type });
+        setFormStep(3);
+    };
+    const handleStatusSelect = async (status) => {
+        const finalData = { ...formData, status };
+        setFormData(finalData);
+        await submitAttendance(finalData);
+    };
+
+    const submitAttendance = async (data) => {
         try {
-            await attendanceAPI.create(formData);
-            setShowForm(false);
-            setFormData({
-                date: new Date().toISOString().split('T')[0],
-                subject: '',
-                type: 'theory',
-                status: 'present'
-            });
-            loadData(); // Reload to update stats and list
-        } catch (error) {
-            console.error('Error creating attendance record:', error);
+            await attendanceAPI.create(data);
+            resetForm();
+            loadData();
+        } catch (err) {
+            console.error('Error creating record:', err);
+            alert('Failed to log attendance.');
         }
+    };
+
+    const resetForm = () => {
+        setShowForm(false);
+        setFormStep(1);
+        setFormData({
+            date: new Date().toISOString().split('T')[0],
+            subject: '',
+            type: 'theory',
+            status: 'present'
+        });
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this record?')) return;
+        if (!window.confirm('Delete this record?')) return;
         try {
             await attendanceAPI.delete(id);
             loadData();
-        } catch (error) {
-            console.error('Error deleting record:', error);
+        } catch (err) {
+            console.error('Error deleting:', err);
+            alert('Failed to delete record.');
         }
     };
 
-    const getAttendancePercentage = () => {
-        if (stats.totalClasses === 0) return 0;
-        return ((stats.present / stats.totalClasses) * 100).toFixed(1);
-    };
+    // Helper: calculate percentage safely
+    const pct = (present, total) => total > 0 ? ((present / total) * 100).toFixed(1) : '—';
 
-    return (
-        <div className="reminders-page"> {/* Reusing layout class */}
-            <div className="page-header">
-                <h1 className="text-gradient">Attendance Tracker</h1>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                    <Plus size={20} />
-                    Log Class
+    // Loading state
+    if (loading) {
+        return (
+            <div className="attendance-page" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh' }}>
+                <div className="loading-spinner">Loading...</div>
+            </div>
+        );
+    }
+
+    // Error state
+    if (error) {
+        return (
+            <div className="attendance-page" style={{ textAlign: 'center', padding: '2rem' }}>
+                <h3>{error}</h3>
+                <button className="btn btn-primary" onClick={loadData}>Retry</button>
+            </div>
+        );
+    }
+
+    // --- Subject Detail View (Level 3) ---
+    if (view === 'detail' && selectedSubject) {
+        const stat = subjectStats.find(s => s._id === selectedSubject);
+        const subjectRecords = records.filter(r => r.subject === selectedSubject);
+
+        return (
+            <div className="attendance-page">
+                <button className="back-btn" onClick={backToSummary}>
+                    <ArrowLeft size={20} />
+                    Back to Summary
                 </button>
+
+                <h2 className="detail-subject-title">{selectedSubject}</h2>
+                <p className="detail-month-label">{formatMonthYear(currentDate)}</p>
+
+                {stat && (
+                    <div className="detail-stats-row">
+                        <div className="detail-stat">
+                            <span className="detail-stat-label">Theory</span>
+                            <span className="detail-stat-value">{pct(stat.theoryPresent, stat.theoryClasses)}%</span>
+                            <span className="detail-stat-count">{stat.theoryPresent}/{stat.theoryClasses}</span>
+                        </div>
+                        <div className="detail-stat">
+                            <span className="detail-stat-label">Practical</span>
+                            <span className="detail-stat-value">{pct(stat.practicalPresent, stat.practicalClasses)}%</span>
+                            <span className="detail-stat-count">{stat.practicalPresent}/{stat.practicalClasses}</span>
+                        </div>
+                        <div className="detail-stat">
+                            <span className="detail-stat-label">Overall</span>
+                            <span className={`detail-stat-value ${(stat.totalPresent / stat.totalClasses) * 100 >= 75 ? 'text-green' : 'text-red'}`}>
+                                {pct(stat.totalPresent, stat.totalClasses)}%
+                            </span>
+                            <span className="detail-stat-count">{stat.totalPresent}/{stat.totalClasses}</span>
+                        </div>
+                    </div>
+                )}
+
+                <h3 className="section-heading">Date-wise Logs</h3>
+
+                {subjectRecords.length === 0 ? (
+                    <div className="empty-state">
+                        <BookOpen size={48} />
+                        <h3>No logs for this subject</h3>
+                    </div>
+                ) : (
+                    <div className="logs-section">
+                        {subjectRecords.map((record) => (
+                            <Card key={record._id} className="log-card">
+                                <div className="log-content">
+                                    <div className="log-header">
+                                        <span className="log-date">
+                                            <Calendar size={14} />
+                                            {new Date(record.date).toLocaleDateString('en-GB')}
+                                        </span>
+                                        <button className="delete-btn" onClick={() => handleDelete(record._id)}>
+                                            <Trash2 size={18} />
+                                        </button>
+                                    </div>
+                                    <div className="log-meta">
+                                        <span className={`type-badge ${record.type}`}>
+                                            {record.type === 'practical' ? 'Practical' : 'Theory'}
+                                        </span>
+                                        <span className={`status-indicator ${record.status}`}>
+                                            {record.status === 'present' ? <CheckCircle size={16} /> : <XCircle size={16} />}
+                                            {record.status === 'present' ? 'Present' : 'Absent'}
+                                        </span>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )}
+            </div>
+        );
+    }
+
+    // --- Summary View (Level 1 + 2) ---
+    return (
+        <div className="attendance-page">
+            <div className="page-header">
+                <h1 className="module-title text-gradient">Attendance Tracker</h1>
             </div>
 
-            <GravityContainer className="summary-cards" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '2rem' }}>
-                <Card className="summary-card">
-                    <div className="summary-content">
-                        <h4>Attendance Rate</h4>
-                        <h2 style={{ color: Number(getAttendancePercentage()) >= 75 ? '#10b981' : '#ef4444' }}>
-                            {getAttendancePercentage()}%
-                        </h2>
-                    </div>
-                </Card>
-                <Card className="summary-card">
-                    <div className="summary-content">
-                        <h4>Total Classes</h4>
-                        <h2>{stats.totalClasses}</h2>
-                    </div>
-                </Card>
-                <Card className="summary-card">
-                    <div className="summary-content">
-                        <h4>Breakdown</h4>
-                        <p style={{ fontSize: '0.9rem', opacity: 0.8 }}>
-                            Theory: {stats.theory} | Practical: {stats.practical}
-                        </p>
-                    </div>
-                </Card>
-            </GravityContainer>
+            <button className="btn btn-primary add-button" onClick={() => setShowForm(!showForm)}>
+                <Plus size={20} />
+                Log Class
+            </button>
 
+            {/* Log Class Form */}
             {showForm && (
-                <Card className="reminder-form">
-                    <h3>Log Class Attendance</h3>
-                    <form onSubmit={handleSubmit}>
-                        <div className="form-group">
-                            <label>Date</label>
-                            <input
-                                type="date"
-                                value={formData.date}
-                                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                                required
-                            />
-                        </div>
+                <Card className="attendance-form">
+                    <div className="form-steps">
+                        {formStep === 1 && (
+                            <div className="step-content">
+                                <h3>Select Subject</h3>
+                                <div className="subject-grid">
+                                    {uniqueSubjects.length > 0 ? (
+                                        uniqueSubjects.map(sub => (
+                                            <button key={sub} className="btn btn-secondary" onClick={() => handleSubjectSelect(sub)}>
+                                                {sub}
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic' }}>No subjects yet. Enter one below.</p>
+                                    )}
+                                    <div className="custom-subject">
+                                        <input
+                                            type="text"
+                                            placeholder="Or enter new subject..."
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' && e.target.value) handleSubjectSelect(e.target.value);
+                                            }}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
 
-                        <div className="form-group">
-                            <label>Subject</label>
-                            <input
-                                type="text"
-                                value={formData.subject}
-                                onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                                placeholder="e.g. Mathematics, Physics Lab"
-                                required
-                            />
-                        </div>
+                        {formStep === 2 && (
+                            <div className="step-content">
+                                <h3>Select Type</h3>
+                                <div className="type-buttons">
+                                    <button className="btn btn-secondary" onClick={() => handleTypeSelect('theory')}>
+                                        <BookOpen size={20} /> Theory
+                                    </button>
+                                    <button className="btn btn-secondary" onClick={() => handleTypeSelect('practical')}>
+                                        <CheckCircle size={20} /> Practical
+                                    </button>
+                                </div>
+                                <button className="btn-link" onClick={() => setFormStep(1)}>Back</button>
+                            </div>
+                        )}
 
-                        <div className="form-group">
-                            <label>Type</label>
-                            <select
-                                value={formData.type}
-                                onChange={(e) => setFormData({ ...formData, type: e.target.value })}
-                            >
-                                <option value="theory">Theory Class</option>
-                                <option value="practical">Practical / Lab</option>
-                            </select>
-                        </div>
-
-                        <div className="form-group">
-                            <label>Status</label>
-                            <select
-                                value={formData.status}
-                                onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-                            >
-                                <option value="present">Present</option>
-                                <option value="absent">Absent</option>
-                            </select>
-                        </div>
-
-                        <div className="form-actions">
-                            <button type="button" className="btn btn-secondary" onClick={() => setShowForm(false)}>
-                                Cancel
-                            </button>
-                            <button type="submit" className="btn btn-primary">
-                                Save Record
-                            </button>
-                        </div>
-                    </form>
+                        {formStep === 3 && (
+                            <div className="step-content">
+                                <h3>Select Status</h3>
+                                <div className="status-buttons">
+                                    <button className="btn btn-success" onClick={() => handleStatusSelect('present')}>
+                                        <CheckCircle size={20} /> Present
+                                    </button>
+                                    <button className="btn btn-danger" onClick={() => handleStatusSelect('absent')}>
+                                        <XCircle size={20} /> Absent
+                                    </button>
+                                </div>
+                                <button className="btn-link" onClick={() => setFormStep(2)}>Back</button>
+                            </div>
+                        )}
+                    </div>
                 </Card>
             )}
 
-            <GravityContainer className="reminders-grid">
-                {attendanceList.map((record) => (
-                    <Card key={record._id} className="reminder-card" style={{ borderLeft: record.status === 'present' ? '4px solid #10b981' : '4px solid #ef4444' }}>
-                        <div className="reminder-header">
-                            <div className="reminder-icon">
-                                <BookOpen size={24} style={{ color: record.type === 'theory' ? '#8b5cf6' : '#f59e0b' }} />
-                            </div>
-                            <button
-                                className="delete-btn"
-                                onClick={() => handleDelete(record._id)}
-                            >
-                                <Trash2 size={18} />
-                            </button>
-                        </div>
-                        <h3>{record.subject}</h3>
-                        <div className="reminder-meta">
-                            <div className="meta-item">
-                                <Calendar size={16} />
-                                <span>{new Date(record.date).toLocaleDateString()}</span>
-                            </div>
-                            <span className="reminder-type" style={{ textTransform: 'capitalize' }}>{record.type}</span>
-                        </div>
-                        <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '5px', color: record.status === 'present' ? '#10b981' : '#ef4444' }}>
-                            {record.status === 'present' ? <CheckCircle size={16} /> : <XCircle size={16} />}
-                            <span style={{ fontWeight: 600, textTransform: 'capitalize' }}>{record.status}</span>
-                        </div>
-                    </Card>
-                ))}
-            </GravityContainer>
+            {/* Level 1: Month Navigator */}
+            <div className="month-navigator">
+                <button className="nav-btn" onClick={handlePrevMonth}>
+                    <ChevronLeft size={24} />
+                </button>
+                <h2>{formatMonthYear(currentDate)}</h2>
+                <button className="nav-btn" onClick={handleNextMonth}>
+                    <ChevronRight size={24} />
+                </button>
+            </div>
 
-            {attendanceList.length === 0 && !showForm && (
+            {/* Overall Stats Bar */}
+            {overallStats && overallStats.totalClasses > 0 && (
+                <div className="overall-bar">
+                    <span className="overall-rate">{overallStats.attendanceRate}%</span>
+                    <span className="overall-label">
+                        {overallStats.totalPresent}/{overallStats.totalClasses} classes
+                        &nbsp;·&nbsp; Theory: {overallStats.theoryClasses} &nbsp;·&nbsp; Practical: {overallStats.practicalClasses}
+                    </span>
+                </div>
+            )}
+
+            {/* Level 2: Subject Cards */}
+            {subjectStats.length === 0 ? (
                 <div className="empty-state">
-                    <BookOpen size={64} className="text-gradient" />
-                    <h3>No attendance records</h3>
-                    <p>Start logging your classes to track attendance</p>
+                    <BookOpen size={48} />
+                    <h3>No Attendance Records</h3>
+                    <p>Log your first class for {formatMonthYear(currentDate)}.</p>
+                </div>
+            ) : (
+                <div className="subject-cards-grid">
+                    {subjectStats.map((stat) => {
+                        const theoryPct = stat.theoryClasses > 0 ? ((stat.theoryPresent / stat.theoryClasses) * 100).toFixed(1) : null;
+                        const practPct = stat.practicalClasses > 0 ? ((stat.practicalPresent / stat.practicalClasses) * 100).toFixed(1) : null;
+                        const totalPct = stat.totalClasses > 0 ? ((stat.totalPresent / stat.totalClasses) * 100).toFixed(1) : 0;
+                        const isGood = parseFloat(totalPct) >= 75;
+
+                        return (
+                            <Card
+                                key={stat._id}
+                                className="subject-card"
+                                onClick={() => openSubjectDetail(stat._id)}
+                            >
+                                <div className="subject-card-header">
+                                    <h3 className="subject-name">{stat._id}</h3>
+                                    <span className={`total-badge ${isGood ? 'good' : 'low'}`}>
+                                        {totalPct}%
+                                    </span>
+                                </div>
+
+                                <div className="subject-card-body">
+                                    {theoryPct !== null && (
+                                        <div className="pct-row">
+                                            <span className="pct-label">Theory</span>
+                                            <div className="pct-bar-bg">
+                                                <div className="pct-bar-fill theory" style={{ width: `${theoryPct}%` }} />
+                                            </div>
+                                            <span className="pct-value">{theoryPct}%</span>
+                                        </div>
+                                    )}
+                                    {practPct !== null && (
+                                        <div className="pct-row">
+                                            <span className="pct-label">Practical</span>
+                                            <div className="pct-bar-bg">
+                                                <div className="pct-bar-fill practical" style={{ width: `${practPct}%` }} />
+                                            </div>
+                                            <span className="pct-value">{practPct}%</span>
+                                        </div>
+                                    )}
+                                </div>
+
+                                <div className="subject-card-footer">
+                                    <span className="class-count">{stat.totalPresent}/{stat.totalClasses} classes attended</span>
+                                </div>
+                            </Card>
+                        );
+                    })}
                 </div>
             )}
         </div>

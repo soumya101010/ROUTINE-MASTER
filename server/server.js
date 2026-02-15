@@ -11,7 +11,12 @@ import studyRoutes from './routes/study.js';
 import expenseRoutes from './routes/expenses.js';
 import documentRoutes from './routes/documents.js';
 import attendanceRoutes from './routes/attendance.js';
+import goalRoutes from './routes/goals.js';
+import focusRoutes from './routes/focus.js';
+import habitRoutes from './routes/habits.js';
+import weeklyReviewRoutes from './routes/weekly-review.js';
 
+// Trigger restart ensure modules loaded
 dotenv.config();
 
 const app = express();
@@ -47,6 +52,10 @@ app.use('/api/study', studyRoutes);
 app.use('/api/expenses', expenseRoutes);
 app.use('/api/documents', documentRoutes);
 app.use('/api/attendance', attendanceRoutes);
+app.use('/api/goals', goalRoutes);
+app.use('/api/focus', focusRoutes);
+app.use('/api/habits', habitRoutes);
+app.use('/api/weekly-review', weeklyReviewRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {
@@ -55,4 +64,5 @@ app.get('/api/health', (req, res) => {
 
 app.listen(PORT, () => {
     console.log(`🚀 Server running on port ${PORT}`);
+    console.log(`✅ Attendance Routes mounted at /api/attendance`);
 });

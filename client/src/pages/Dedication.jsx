@@ -59,7 +59,7 @@ export default function Dedication() {
                 </div>
 
                 <div className="dedication-text-container">
-                    <h2 className="dedication-title">For Enakshi</h2>
+                    <h1 className="module-title text-gradient">Dedication</h1>
 
                     <div className="dedication-body">
                         <p>This project exists because some people make chaos feel lighter.</p>

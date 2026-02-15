@@ -4,47 +4,65 @@ import Expense from '../models/Expense.js';
 const router = express.Router();
 
 // Get dashboard stats (aggregated)
+// Get dashboard stats (aggregated)
 router.get('/dashboard-stats', async (req, res) => {
     try {
+        const today = new Date();
         const thirtyDaysAgo = new Date();
-        thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+        thirtyDaysAgo.setDate(today.getDate() - 30);
+
+        // Current Month Bounds
+        const currentMonthStart = new Date(today.getFullYear(), today.getMonth(), 1);
+        const currentMonthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+        // Last Month Bounds
+        const lastMonthStart = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthEnd = new Date(today.getFullYear(), today.getMonth(), 0);
 
         const stats = await Expense.aggregate([
             {
-                $match: {
-                    date: { $gte: thirtyDaysAgo }
-                }
-            },
-            {
                 $facet: {
-                    "totalStats": [
-                        {
-                            $group: {
-                                _id: null,
-                                totalIncome: {
-                                    $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] }
-                                },
-                                totalExpense: {
-                                    $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
-                                }
-                            }
-                        }
-                    ],
-                    "dailyTrend": [
+                    "recentStats": [
+                        { $match: { date: { $gte: thirtyDaysAgo } } },
                         {
                             $group: {
                                 _id: { $dateToString: { format: "%Y-%m-%d", date: "$date" } },
-                                income: {
-                                    $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] }
-                                },
-                                expense: {
-                                    $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
-                                }
+                                income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
+                                expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
                             }
                         },
                         { $sort: { _id: 1 } }
                     ],
-                    "categoryStats": [
+                    "currentMonth": [
+                        { $match: { date: { $gte: currentMonthStart, $lte: currentMonthEnd } } },
+                        {
+                            $group: {
+                                _id: null,
+                                income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
+                                expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
+                            }
+                        }
+                    ],
+                    "lastMonth": [
+                        { $match: { date: { $gte: lastMonthStart, $lte: lastMonthEnd } } },
+                        {
+                            $group: {
+                                _id: null,
+                                income: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
+                                expense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
+                            }
+                        }
+                    ],
+                    "globalStats": [
+                        {
+                            $group: {
+                                _id: null,
+                                totalIncome: { $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] } },
+                                totalExpense: { $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] } }
+                            }
+                        }
+                    ],
+                    "globalCategories": [
                         {
                             $group: {
                                 _id: "$category",
@@ -56,35 +74,33 @@ router.get('/dashboard-stats', async (req, res) => {
             }
         ]);
 
-        // Get global category stats (all time) for Expenses page
-        const globalCategoryStats = await Expense.aggregate([
-            {
-                $group: {
-                    _id: "$category",
-                    total: { $sum: "$amount" }
-                }
-            }
-        ]);
+        const resultData = stats[0];
+        const current = resultData.currentMonth[0] || { income: 0, expense: 0 };
+        const last = resultData.lastMonth[0] || { income: 0, expense: 0 };
+        const global = resultData.globalStats[0] || { totalIncome: 0, totalExpense: 0 };
 
-        // Get global totals (all time) for balance
-        const globalStats = await Expense.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalIncome: {
-                        $sum: { $cond: [{ $eq: ["$type", "income"] }, "$amount", 0] }
-                    },
-                    totalExpense: {
-                        $sum: { $cond: [{ $eq: ["$type", "expense"] }, "$amount", 0] }
-                    }
-                }
-            }
-        ]);
+        const currentBalance = current.income - current.expense;
+        const lastBalance = last.income - last.expense;
+
+        let percentageChange = 0;
+        if (lastBalance !== 0) {
+            percentageChange = ((currentBalance - lastBalance) / Math.abs(lastBalance)) * 100;
+        } else if (currentBalance !== 0) {
+            percentageChange = 100; // If last month was 0 and this month has balance
+        }
 
         const result = {
-            recent: stats[0],
-            global: globalStats[0] || { totalIncome: 0, totalExpense: 0 },
-            globalCategories: globalCategoryStats
+            recent: {
+                totalStats: [{ totalIncome: global.totalIncome, totalExpense: global.totalExpense }], // Keep structure for frontend compatibility
+                dailyTrend: resultData.recentStats
+            },
+            global: global,
+            globalCategories: resultData.globalCategories,
+            monthComparison: {
+                currentBalance,
+                lastBalance,
+                percentageChange: Math.round(percentageChange)
+            }
         };
 
         res.json(result);

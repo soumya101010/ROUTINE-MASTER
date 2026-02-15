@@ -1,0 +1,489 @@
+/* Attendance Page */
+.attendance-page {
+    padding: 1.5rem;
+    max-width: 800px;
+    margin: 0 auto;
+    padding-bottom: 120px;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.page-header h1 {
+    margin: 0;
+}
+
+/* Add Button */
+.add-button {
+    width: auto;
+    margin-bottom: 2.5rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+/* ──────────────────────────────────
+   Month Navigator (mirrors Expenses)
+   ────────────────────────────────── */
+.month-navigator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-lg);
+    backdrop-filter: blur(10px);
+}
+
+.month-navigator h2 {
+    margin: 0;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    min-width: 180px;
+    text-align: center;
+}
+
+.nav-btn {
+    background: rgba(233, 30, 99, 0.15);
+    border: 1px solid rgba(233, 30, 99, 0.3);
+    color: var(--color-accent-primary);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all var(--transition-base);
+}
+
+.nav-btn:hover {
+    background: rgba(233, 30, 99, 0.3);
+    transform: scale(1.1);
+}
+
+/* ──────────────────────────────
+   Overall Stats Bar
+   ────────────────────────────── */
+.overall-bar {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem 1.25rem;
+    margin-bottom: 1.5rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+}
+
+.overall-rate {
+    font-size: 1.5rem;
+    font-weight: 700;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.overall-label {
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+}
+
+/* ──────────────────────────────
+   Subject Cards Grid (Level 2)
+   ────────────────────────────── */
+.subject-cards-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.subject-card {
+    cursor: pointer;
+    transition: all var(--transition-base);
+    padding: 1.25rem !important;
+}
+
+.subject-card:hover {
+    transform: translateY(-2px);
+    border-color: var(--color-accent-primary);
+}
+
+.subject-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.subject-name {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--color-text-primary);
+    margin: 0;
+}
+
+.total-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.total-badge.good {
+    background: rgba(16, 185, 129, 0.15);
+    color: #10b981;
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.total-badge.low {
+    background: rgba(239, 68, 68, 0.15);
+    color: #ef4444;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+/* Percentage Rows */
+.subject-card-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.pct-row {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.pct-label {
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    min-width: 60px;
+}
+
+.pct-bar-bg {
+    flex: 1;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.pct-bar-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.5s ease;
+}
+
+.pct-bar-fill.theory {
+    background: linear-gradient(90deg, #ec4899, #f472b6);
+}
+
+.pct-bar-fill.practical {
+    background: linear-gradient(90deg, #8b5cf6, #a78bfa);
+}
+
+.pct-value {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    min-width: 42px;
+    text-align: right;
+}
+
+.subject-card-footer {
+    margin-top: 0.75rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.class-count {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}
+
+/* ──────────────────────────────
+   Detail View (Level 3)
+   ────────────────────────────── */
+.back-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: none;
+    border: none;
+    color: var(--color-accent-primary);
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.5rem 0;
+    margin-bottom: 1rem;
+    transition: opacity var(--transition-fast);
+}
+
+.back-btn:hover {
+    opacity: 0.7;
+}
+
+.detail-subject-title {
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    margin: 0 0 0.25rem 0;
+}
+
+.detail-month-label {
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    margin: 0 0 1.5rem 0;
+}
+
+.detail-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+}
+
+.detail-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 1rem;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-md);
+}
+
+.detail-stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.35rem;
+}
+
+.detail-stat-value {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+}
+
+.detail-stat-count {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 0.2rem;
+}
+
+.text-green {
+    color: #10b981 !important;
+}
+
+.text-red {
+    color: #ef4444 !important;
+}
+
+.section-heading {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--color-text-secondary);
+    margin: 0 0 1rem 0;
+}
+
+/* ──────────────────────────────
+   Log Cards (shared)
+   ────────────────────────────── */
+.logs-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.log-card {
+    padding: 1rem !important;
+}
+
+.log-content {
+    width: 100%;
+}
+
+.log-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.log-date {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+    color: var(--color-text-secondary);
+}
+
+.delete-btn {
+    background: none;
+    border: none;
+    color: var(--color-text-muted);
+    cursor: pointer;
+    padding: 0.3rem;
+    border-radius: var(--radius-sm);
+    transition: all var(--transition-fast);
+}
+
+.delete-btn:hover {
+    color: var(--color-accent-danger);
+    background: rgba(239, 68, 68, 0.1);
+}
+
+.log-meta {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.type-badge {
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 999px;
+    font-weight: 600;
+}
+
+.type-badge.theory {
+    background: rgba(236, 72, 153, 0.15);
+    color: #ec4899;
+    border: 1px solid rgba(236, 72, 153, 0.3);
+}
+
+.type-badge.practical {
+    background: rgba(139, 92, 246, 0.15);
+    color: #8b5cf6;
+    border: 1px solid rgba(139, 92, 246, 0.3);
+}
+
+.status-indicator {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-indicator.present {
+    color: #10b981;
+}
+
+.status-indicator.absent {
+    color: #ef4444;
+}
+
+/* ──────────────────────────────
+   Form Styles
+   ────────────────────────────── */
+.attendance-form {
+    margin-bottom: 1.5rem;
+}
+
+.form-steps {
+    padding: 0.5rem;
+}
+
+.step-content h3 {
+    color: var(--color-text-primary);
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.subject-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.custom-subject {
+    width: 100%;
+    margin-top: 0.5rem;
+}
+
+.custom-subject input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    background: var(--color-bg-tertiary);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-sm);
+    color: var(--color-text-primary);
+    font-size: 0.9rem;
+}
+
+.custom-subject input:focus {
+    outline: none;
+    border-color: var(--color-accent-primary);
+}
+
+.type-buttons,
+.status-buttons {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--color-accent-primary);
+    cursor: pointer;
+    margin-top: 0.75rem;
+    font-size: 0.9rem;
+}
+
+/* ──────────────────────────────
+   Empty State
+   ────────────────────────────── */
+.empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--color-text-muted);
+}
+
+.empty-state h3 {
+    color: var(--color-text-secondary);
+    margin: 1rem 0 0.5rem;
+}
+
+.empty-state p {
+    color: var(--color-text-muted);
+}
+
+/* ──────────────────────────────
+   Responsive
+   ────────────────────────────── */
+@media (max-width: 768px) {
+    .attendance-page {
+        padding: 1rem;
+        padding-bottom: 120px;
+    }
+
+    .month-navigator h2 {
+        font-size: 1rem;
+        min-width: 140px;
+    }
+
+    .detail-stats-row {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 0.5rem;
+    }
+
+    .detail-stat-value {
+        font-size: 1.1rem;
+    }
+}

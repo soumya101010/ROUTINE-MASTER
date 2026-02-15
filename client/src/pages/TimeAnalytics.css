@@ -1,0 +1,117 @@
+.time-analytics-page {
+    padding: var(--spacing-xl);
+    padding-bottom: 120px;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.time-analytics-page .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-md);
+    padding: 6px 0;
+    transition: color 0.2s;
+}
+
+.time-analytics-page .back-btn:hover {
+    color: var(--color-accent-primary);
+}
+
+.time-analytics-page .page-subtitle {
+    color: var(--color-text-muted);
+    margin-bottom: var(--spacing-xl);
+    font-size: 0.95rem;
+}
+
+.analytics-stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.analytics-stat-card {
+    padding: var(--spacing-lg) var(--spacing-md) !important;
+    text-align: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.analytics-stat-card .stat-icon {
+    color: var(--color-accent-primary);
+}
+
+.analytics-stat-card .stat-value {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--color-text-primary);
+}
+
+.analytics-stat-card .peak-value {
+    font-size: 1rem;
+}
+
+.analytics-stat-card .stat-label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.chart-card {
+    padding: var(--spacing-xl) !important;
+}
+
+.chart-card h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 1rem;
+    margin-bottom: var(--spacing-lg);
+    color: var(--color-text-primary);
+}
+
+.chart-container {
+    width: 100%;
+}
+
+.loading-state {
+    text-align: center;
+    padding: 60px 0;
+    color: var(--color-text-muted);
+}
+
+@media (max-width: 1024px) {
+    .time-analytics-page {
+        padding: var(--spacing-md);
+        padding-bottom: 120px;
+    }
+
+    .analytics-stats-row {
+        grid-template-columns: 1fr;
+        gap: var(--spacing-sm);
+    }
+
+    .analytics-stat-card {
+        flex-direction: row;
+        justify-content: flex-start;
+        padding: var(--spacing-md) var(--spacing-lg) !important;
+        gap: var(--spacing-md);
+    }
+
+    .analytics-stat-card .stat-value {
+        font-size: 1.25rem;
+    }
+
+    .analytics-stat-card .stat-label {
+        font-size: 0.7rem;
+    }
+}

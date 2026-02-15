@@ -131,21 +131,22 @@ export default function Routines() {
     return (
         <div className="routines-page">
             <div className="page-header">
-                <h1 className="text-gradient">Daily Routines</h1>
-                <button className="btn btn-primary" onClick={() => {
-                    setFormData({
-                        name: '',
-                        type: 'morning',
-                        tasks: [{ title: '', time: '', completed: false }],
-                        daysOfWeek: [],
-                        isTemplate: true
-                    });
-                    setShowForm(!showForm);
-                }}>
-                    <Plus size={20} />
-                    Add Routine
-                </button>
+                <h1 className="module-title text-gradient">Daily Routines</h1>
             </div>
+
+            <button className="btn btn-primary add-button" onClick={() => {
+                setFormData({
+                    name: '',
+                    type: 'morning',
+                    tasks: [{ title: '', time: '', completed: false }],
+                    daysOfWeek: [],
+                    isTemplate: true
+                });
+                setShowForm(!showForm);
+            }}>
+                <Plus size={20} />
+                Add Routine
+            </button>
 
             {showForm && (
                 <Card className="routine-form">

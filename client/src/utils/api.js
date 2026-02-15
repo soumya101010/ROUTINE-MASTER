@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+console.log('API_BASE_URL:', API_BASE_URL);
 
 const api = axios.create({
     baseURL: API_BASE_URL,
@@ -78,8 +79,42 @@ export const documentAPI = {
 // Attendance
 export const attendanceAPI = {
     getAll: (page = 1, limit = 20) => api.get(`/attendance?page=${page}&limit=${limit}`),
+    getMonthly: (year, month) => api.get(`/attendance/monthly/${year}/${month}`),
     create: (data) => api.post('/attendance', data),
     delete: (id) => api.delete(`/attendance/${id}`)
+};
+
+// Goals
+export const goalAPI = {
+    getAll: () => api.get('/goals'),
+    getStats: () => api.get('/goals/stats'),
+    create: (data) => api.post('/goals', data),
+    update: (id, data) => api.patch(`/goals/${id}`, data),
+    delete: (id) => api.delete(`/goals/${id}`)
+};
+
+// Focus Sessions
+export const focusAPI = {
+    getAll: () => api.get('/focus'),
+    getStats: () => api.get('/focus/stats'),
+    create: (data) => api.post('/focus', data)
+};
+
+// Habits
+export const habitAPI = {
+    getAll: () => api.get('/habits'),
+    getStats: () => api.get('/habits/stats'),
+    create: (data) => api.post('/habits', data),
+    complete: (id) => api.patch(`/habits/${id}/complete`),
+    delete: (id) => api.delete(`/habits/${id}`)
+};
+
+// Weekly Review
+export const weeklyReviewAPI = {
+    getAll: () => api.get('/weekly-review'),
+    getStats: () => api.get('/weekly-review/stats'),
+    getCurrent: () => api.get('/weekly-review/current'),
+    save: (data) => api.post('/weekly-review', data)
 };
 
 export default api;

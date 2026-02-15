@@ -131,12 +131,13 @@ export default function Documents() {
     return (
         <div className="documents-page">
             <div className="page-header">
-                <h1 className="text-gradient">Document Storage</h1>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                    <Upload size={20} />
-                    Upload Document
-                </button>
+                <h1 className="module-title text-gradient">Document Storage</h1>
             </div>
+
+            <button className="btn btn-primary add-button" onClick={() => setShowForm(!showForm)}>
+                <Upload size={20} />
+                Upload Document
+            </button>
 
             <div className="documents-controls">
                 <div className="search-box">

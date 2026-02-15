@@ -46,6 +46,9 @@ export default function Reminders() {
             });
             // Update local state without refetching
             setReminders(prev => [...prev, response.data]);
+
+            // Trigger notification sync
+            window.dispatchEvent(new CustomEvent('sync-reminders'));
         } catch (error) {
             console.error('Error creating reminder:', error);
         }
@@ -76,12 +79,13 @@ export default function Reminders() {
     return (
         <div className="reminders-page">
             <div className="page-header">
-                <h1 className="text-gradient">Reminders</h1>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                    <Plus size={20} />
-                    Add Reminder
-                </button>
+                <h1 className="module-title text-gradient">Reminders</h1>
             </div>
+
+            <button className="btn btn-primary add-button" onClick={() => setShowForm(!showForm)}>
+                <Plus size={20} />
+                Add Reminder
+            </button>
 
             {showForm && (
                 <Card className="reminder-form">

@@ -1,0 +1,307 @@
+.focus-page {
+    padding: var(--spacing-xl);
+    padding-bottom: 120px;
+    max-width: 600px;
+    margin: 0 auto;
+}
+
+.focus-page .back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-bottom: var(--spacing-md);
+    padding: 6px 0;
+}
+
+.focus-page .back-btn:hover {
+    color: var(--color-accent-primary);
+}
+
+.focus-stats-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+}
+
+.focus-stat {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+}
+
+.focus-stat .stat-icon {
+    color: var(--color-accent-primary);
+}
+
+.focus-stat .stat-num {
+    font-weight: 800;
+    font-size: 1.1rem;
+    color: var(--color-text-primary);
+}
+
+.focus-stat .stat-lbl {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-transform: uppercase;
+}
+
+.timer-card {
+    padding: var(--spacing-xl) !important;
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+}
+
+.session-type-toggle {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.type-btn {
+    padding: 8px 20px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: transparent;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+}
+
+.type-btn.active {
+    background: rgba(233, 30, 99, 0.2);
+    border-color: var(--color-accent-primary);
+    color: var(--color-accent-primary);
+    font-weight: 600;
+}
+
+.duration-picker {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: var(--spacing-lg);
+}
+
+.dur-btn {
+    padding: 6px 16px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--color-text-muted);
+    cursor: pointer;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+}
+
+.dur-btn.active {
+    background: var(--gradient-primary);
+    border-color: transparent;
+    color: #fff;
+    font-weight: 700;
+}
+
+.link-section {
+    margin-bottom: var(--spacing-lg);
+}
+
+.link-hint {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-bottom: 8px;
+}
+
+.linkable-items {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+}
+
+.link-pill {
+    padding: 4px 12px;
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.03);
+    color: var(--color-text-secondary);
+    font-size: 0.7rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.link-pill.active {
+    background: rgba(233, 30, 99, 0.2);
+    border-color: var(--color-accent-primary);
+    color: var(--color-accent-primary);
+}
+
+.timer-display {
+    position: relative;
+    width: 220px;
+    height: 220px;
+    margin: 0 auto var(--spacing-xl);
+}
+
+.timer-ring {
+    width: 100%;
+    height: 100%;
+}
+
+.timer-text {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+}
+
+.timer-text .time {
+    display: block;
+    font-size: 2.8rem;
+    font-weight: 800;
+    color: var(--color-text-primary);
+    letter-spacing: -1px;
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-text .break-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    justify-content: center;
+    font-size: 0.8rem;
+    color: var(--color-accent-success);
+    margin-top: 4px;
+}
+
+.timer-text .pomo-count {
+    display: block;
+    font-size: 0.85rem;
+    margin-top: 4px;
+    color: var(--color-text-muted);
+}
+
+.timer-controls {
+    display: flex;
+    gap: var(--spacing-md);
+    justify-content: center;
+    align-items: center;
+}
+
+.control-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 32px;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    font-weight: 700;
+    font-size: 1rem;
+    transition: all 0.2s;
+}
+
+.control-btn.start {
+    background: var(--gradient-primary);
+    color: white;
+}
+
+.control-btn.pause {
+    background: rgba(255, 255, 255, 0.08);
+    color: var(--color-text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.control-btn.reset {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--color-text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 12px 16px;
+}
+
+.control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(233, 30, 99, 0.3);
+}
+
+.done-message {
+    margin-top: var(--spacing-lg);
+    font-size: 1rem;
+    color: var(--color-accent-success);
+    font-weight: 600;
+}
+
+.session-history {
+    margin-top: var(--spacing-xl);
+}
+
+.session-history h2 {
+    font-size: 1rem;
+    margin-bottom: var(--spacing-md);
+    color: var(--color-text-primary);
+}
+
+.session-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: var(--spacing-md) var(--spacing-lg) !important;
+    margin-bottom: var(--spacing-sm);
+}
+
+.session-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.session-label {
+    font-size: 0.9rem;
+    color: var(--color-text-primary);
+    font-weight: 600;
+}
+
+.session-type {
+    font-size: 0.7rem;
+    color: var(--color-text-muted);
+    text-transform: capitalize;
+}
+
+.session-meta {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 2px;
+    font-size: 0.85rem;
+    color: var(--color-text-secondary);
+    font-weight: 700;
+}
+
+.session-date {
+    font-size: 0.65rem;
+    color: var(--color-text-muted);
+    font-weight: 400;
+}
+
+@media (max-width: 1024px) {
+    .focus-page {
+        padding: var(--spacing-md);
+        padding-bottom: 120px;
+    }
+
+    .timer-display {
+        width: 200px;
+        height: 200px;
+    }
+
+    .timer-text .time {
+        font-size: 2.4rem;
+    }
+}

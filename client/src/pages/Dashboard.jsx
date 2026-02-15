@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Bell, Calendar, BookOpen, FileText, DollarSign, TrendingUp, Heart, CheckSquare } from 'lucide-react';
+import { Bell, Calendar, BookOpen, FileText, DollarSign, TrendingUp, TrendingDown, Heart, CheckSquare, BarChart3, Target, Timer, Flame, ClipboardList } from 'lucide-react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
-import { reminderAPI, routineAPI, expenseAPI } from '../utils/api';
+import { reminderAPI, routineAPI, expenseAPI, goalAPI, focusAPI, habitAPI, weeklyReviewAPI } from '../utils/api';
 import './Dashboard.css';
 
 export default function Dashboard() {
@@ -16,15 +16,23 @@ export default function Dashboard() {
         balance: 0
     });
     const [dailyData, setDailyData] = useState([]);
+    const [moduleBadges, setModuleBadges] = useState({
+        goals: { text: 'New', loading: true },
+        focus: { text: 'Start', loading: true },
+        habits: { text: 'New', loading: true },
+        review: { text: 'New', loading: true },
+        analytics: { text: 'This Week', loading: false }
+    });
 
     useEffect(() => {
         loadStats();
+        loadModuleBadges();
     }, []);
 
     const loadStats = async () => {
         try {
             const [remindersRes, routinesRes, expensesStatsRes] = await Promise.all([
-                reminderAPI.getAll(1, 1, { isActive: true }), // Only need count of active, so limit 1
+                reminderAPI.getAll(1, 1, { isActive: true }),
                 routineAPI.getAll(1, 1),
                 expenseAPI.getDashboardStats()
             ]);
@@ -33,18 +41,9 @@ export default function Dashboard() {
             const recentStats = statsData.recent || { totalStats: [], dailyTrend: [] };
             const globalStats = statsData.global || { totalIncome: 0, totalExpense: 0 };
             const totalStats = recentStats.totalStats[0] || { totalIncome: 0, totalExpense: 0 };
-
-            // Calculate balance (Global balance)
             const balance = globalStats.totalIncome - globalStats.totalExpense;
 
-            // Format trend data
-            // Format trend data
             let runningBalance = balance;
-            // Calculate starting balance by subtracting all recent changes
-            // Note: This assumes dailyTrend (last 30 days) matches the recent activity flow.
-            // We iterate backwards to establish the trend curve relative to current balance.
-
-            // First, map data to basic structure
             const mappedData = recentStats.dailyTrend.map(day => ({
                 id: day._id,
                 income: day.income,
@@ -52,7 +51,6 @@ export default function Dashboard() {
                 net: day.income - day.expense
             }));
 
-            // We need to build the trend forward, so we need the balance at the start of the period.
             const totalRecentChange = mappedData.reduce((acc, curr) => acc + curr.net, 0);
             let currentTrendBalance = balance - totalRecentChange;
 
@@ -66,15 +64,13 @@ export default function Dashboard() {
                 };
             });
 
-            // Add running balance for the chart if we want to show net worth trend
-            // For now, let's keep the daily income/expense view as it's cleaner with the new data structure
-
             setStats({
                 reminders: remindersRes.data.totalItems || 0,
                 routines: routinesRes.data.totalItems || 0,
                 totalIncome: totalStats.totalIncome,
                 totalExpense: totalStats.totalExpense,
-                balance: balance
+                balance: balance,
+                percentageChange: statsData.monthComparison?.percentageChange || 0
             });
             setDailyData(trendData);
         } catch (error) {
@@ -82,93 +78,90 @@ export default function Dashboard() {
         }
     };
 
-    const quickLinks = [
-        {
-            to: '/reminders',
-            icon: Bell,
-            title: 'Reminders',
-            description: 'Medication & timed alerts',
-            color: '#ec4899',
-            count: stats.reminders
-        },
-        {
-            to: '/routines',
-            icon: Calendar,
-            title: 'Routines',
-            description: 'Daily routine templates',
-            color: '#e91e63',
-            count: stats.routines
-        },
-        {
-            to: '/study',
-            icon: BookOpen,
-            title: 'Study Tracker',
-            description: 'Hierarchical backlog',
-            color: '#f472b6'
-        },
-        {
-            to: '/documents',
-            icon: FileText,
-            title: 'Documents',
-            description: 'Secure storage',
-            color: '#10b981'
-        },
-        {
-            to: '/expenses',
-            icon: DollarSign,
-            title: 'Income & Expenses',
-            description: `Balance: ₹${stats.balance.toFixed(0)}`,
-            color: stats.balance >= 0 ? '#10b981' : '#ef4444'
-        },
-        {
-            to: '/attendance',
-            icon: CheckSquare,
-            title: 'Attendance',
-            description: 'Track your classes',
-            color: '#8b5cf6'
-        }
+    const loadModuleBadges = async () => {
+        // Load all badge stats in parallel, gracefully handle failures
+        const results = await Promise.allSettled([
+            goalAPI.getStats(),
+            focusAPI.getStats(),
+            habitAPI.getStats(),
+            weeklyReviewAPI.getStats()
+        ]);
+
+        setModuleBadges({
+            goals: {
+                text: results[0].status === 'fulfilled'
+                    ? (results[0].value.data.active > 0 ? `${results[0].value.data.active} Active` : 'New')
+                    : 'New',
+                loading: false
+            },
+            focus: {
+                text: results[1].status === 'fulfilled'
+                    ? (results[1].value.data.weeklyMinutes > 0 ? `${Math.round(results[1].value.data.weeklyMinutes / 60)}h ${results[1].value.data.weeklyMinutes % 60}m` : 'Start')
+                    : 'Start',
+                loading: false
+            },
+            habits: {
+                text: results[2].status === 'fulfilled'
+                    ? (results[2].value.data.maxStreak > 0 ? `${results[2].value.data.maxStreak} Day Streak` : (results[2].value.data.total > 0 ? `${results[2].value.data.completedToday}/${results[2].value.data.total} Today` : 'New'))
+                    : 'New',
+                loading: false
+            },
+            review: {
+                text: results[3].status === 'fulfilled'
+                    ? (results[3].value.data.hasCurrentWeek ? 'In Progress' : 'New')
+                    : 'New',
+                loading: false
+            },
+            analytics: { text: 'This Week', loading: false }
+        });
+    };
+
+    const moduleCards = [
+        { path: '/time-analytics', icon: BarChart3, title: 'Time Analytics', badgeKey: 'analytics', color: 'blue' },
+        { path: '/goals', icon: Target, title: 'Goal Tracker', badgeKey: 'goals', color: 'purple' },
+        { path: '/focus', icon: Timer, title: 'Focus Mode', badgeKey: 'focus', color: 'orange' },
+        { path: '/habits', icon: Flame, title: 'Habit Streaks', badgeKey: 'habits', color: 'pink' },
+        { path: '/weekly-review', icon: ClipboardList, title: 'Weekly Review', badgeKey: 'review', color: 'cyan' }
     ];
 
     return (
         <div className="dashboard">
-            {/* Mobile View - Layout from reference image */}
+            {/* Mobile View */}
             <div className="mobile-only">
-                <div className="mobile-only-header">
-                    <div className="user-profile">
-                        <div className="avatar">
-                            <img src={`/her.jpeg?v=${new Date().getTime()}`} alt="Avatar" />
-                        </div>
-                        <div className="greeting">
-                            <span>Welcome Back!</span>
-                            <h3>Enakshi Debnath</h3>
-                        </div>
-                    </div>
-                    <div className="dashboard-actions">
-                        {/* Mobile Header Actions - Verified Clean */}
-                        <Link to="/reminders" className="mobile-test-btn" style={{ textDecoration: 'none' }}>
-                            <Bell size={20} color="#ec4899" />
-                            {stats.reminders > 0 && <span className="dot" style={{ position: 'absolute', top: '8px', right: '8px', border: '1px solid #000' }}></span>}
-                        </Link>
-                        <Link to="/dedication" className="mobile-heart-btn">
-                            <Heart size={20} color="#ec4899" />
-                        </Link>
-                    </div>
-                </div>
-
                 <div className="featured-section">
                     <Card className="featured-balance-card">
                         <div className="featured-content">
                             <span className="label">Monthly Balance</span>
                             <h2 className="amount">₹{stats.balance.toLocaleString()}</h2>
                             <div className="trend-tag">
-                                <TrendingUp size={14} />
-                                <span>+15% From last month</span>
+                                {stats.percentageChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
+                                <span>{stats.percentageChange >= 0 ? '+' : ''}{stats.percentageChange}% From last month</span>
                             </div>
                         </div>
                         <div className="featured-chart-overlay">
                             <ResponsiveContainer width="100%" height={120}>
-                                <AreaChart data={dailyData.slice(-15)} margin={{ top: 5, right: 0, left: 0, bottom: 0 }}>
-                                    <YAxis domain={['dataMin', 'dataMax']} hide />
+                                <AreaChart data={dailyData.slice(-15)} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                                    <defs>
+                                        <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#fff" stopOpacity={0.3} />
+                                            <stop offset="95%" stopColor="#fff" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <XAxis
+                                        dataKey="date"
+                                        hide={false}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                                        interval="preserveStartEnd"
+                                    />
+                                    <YAxis
+                                        hide={false}
+                                        axisLine={false}
+                                        tickLine={false}
+                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                                        tickFormatter={(val) => `₹${val}`}
+                                    />
                                     <Tooltip
                                         content={({ active, payload }) => {
                                             if (active && payload && payload.length) {
@@ -193,9 +186,9 @@ export default function Dashboard() {
                                     <Area
                                         type="monotone"
                                         dataKey="balanceTrend"
-                                        stroke="rgba(255,255,255,0.9)"
-                                        fill="rgba(255,255,255,0.05)"
-                                        strokeWidth={3}
+                                        stroke="#fff"
+                                        fill="url(#balanceGradient)"
+                                        strokeWidth={2}
                                         dot={false}
                                         activeDot={{ r: 4, fill: '#fff', strokeWidth: 0 }}
                                     />
@@ -205,50 +198,47 @@ export default function Dashboard() {
                     </Card>
                 </div>
 
-                <div className="dashboard-grid">
-                    {quickLinks.slice(0, 6).map((link) => (
-                        <Link key={link.to} to={link.to} className="dashboard-link">
-                            <Card className="dashboard-card mini">
-                                <div className="mini-card-header">
-                                    <div className="mini-icon-circle" style={{ background: `${link.color}22` }}>
-                                        <link.icon size={18} style={{ color: link.color }} />
-                                    </div>
-                                    <span className="mini-label">{link.title}</span>
+                {/* Module Cards Grid — Mobile */}
+                <div className="module-cards-grid">
+                    {moduleCards.map(({ path, icon: Icon, title, badgeKey, color }) => (
+                        <Link key={path} to={path} className="module-card-link">
+                            <Card className={`module-card ${color}`}>
+                                <div className={`module-card-icon ${color}`}>
+                                    <Icon size={28} />
                                 </div>
-                                <div className="mini-card-body">
-                                    <span className="mini-value">{link.count !== undefined ? link.count : 'New'}</span>
-                                </div>
+                                <h3 className="module-card-title">{title}</h3>
+                                <span className={`module-card-badge ${color}`}>
+                                    {moduleBadges[badgeKey]?.loading ? '...' : moduleBadges[badgeKey]?.text}
+                                </span>
                             </Card>
                         </Link>
                     ))}
                 </div>
             </div>
 
-            {/* Desktop View - Restored original icons and structure */}
+            {/* Desktop View */}
             <div className="desktop-only">
                 <div className="dashboard-header">
-                    <h1 className="text-gradient">Dashboard</h1>
+                    <h1 className="module-title text-gradient">Dashboard</h1>
                     <p>Your complete overview</p>
                 </div>
 
-                <GravityContainer className="dashboard-grid">
-                    {quickLinks.map((link) => (
-                        <Link key={link.to} to={link.to} className="dashboard-link">
-                            <Card className="dashboard-card">
-                                <div className="card-icon" style={{ color: link.color }}>
-                                    <link.icon size={40} />
+                {/* Module Cards Grid — Desktop */}
+                <div className="module-cards-grid desktop-grid">
+                    {moduleCards.map(({ path, icon: Icon, title, badgeKey, color }) => (
+                        <Link key={path} to={path} className="module-card-link">
+                            <Card className={`module-card ${color}`}>
+                                <div className={`module-card-icon ${color}`}>
+                                    <Icon size={28} />
                                 </div>
-                                <h3>{link.title}</h3>
-                                <p>{link.description}</p>
-                                {link.count !== undefined && (
-                                    <div className="card-badge" style={{ background: link.color }}>
-                                        {link.count}
-                                    </div>
-                                )}
+                                <h3 className="module-card-title">{title}</h3>
+                                <span className={`module-card-badge ${color}`}>
+                                    {moduleBadges[badgeKey]?.loading ? '...' : moduleBadges[badgeKey]?.text}
+                                </span>
                             </Card>
                         </Link>
                     ))}
-                </GravityContainer>
+                </div>
 
                 <Card className="overview-section">
                     <h2>Daily Income & Expenses (Last 30 Days)</h2>

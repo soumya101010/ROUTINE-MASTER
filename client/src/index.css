@@ -53,6 +53,10 @@
   --transition-base: 0.3s ease;
   --transition-slow: 0.5s ease;
 
+  /* Header Sizes */
+  --header-size-desktop: 50px;
+  --header-size-mobile: 40px;
+
   /* Typography */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-synthesis: none;
@@ -165,6 +169,18 @@ h6 {
 
 h1 {
   font-size: 3rem;
+  font-weight: 700;
+}
+
+.module-title {
+  display: block;
+  font-size: var(--header-size-desktop);
+  font-weight: 800;
+  letter-spacing: -1px;
+  line-height: 1.2;
+  margin-bottom: 0;
+  padding: 0.1em 0;
+  width: 100%;
 }
 
 h2 {
@@ -490,9 +506,16 @@ select:focus {
    RESPONSIVE
    ============================================ */
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   h1 {
-    font-size: 2rem;
+    font-size: 2.25rem;
+  }
+
+  .module-title {
+    font-size: var(--header-size-mobile);
+    letter-spacing: -1.5px;
+    line-height: 1.1;
+    padding: 0.2em 0;
   }
 
   h2 {

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, Search } from 'lucide-react';
-import { PieChart, Pie, Cell, LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend, CartesianGrid, Sector } from 'recharts';
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
 import { expenseAPI } from '../utils/api';
+import { getPreviousMonth, getNextMonth, formatMonthYear } from '../utils/dateHelpers';
 import './Expenses.css';
+
 const RADIAN = Math.PI / 180;
 
 const renderActiveShape = (props) => {
@@ -41,8 +43,6 @@ const renderCustomLabel = (props) => {
     const x = cx + radius * Math.cos(-midAngle * RADIAN);
     const y = cy + radius * Math.sin(-midAngle * RADIAN);
     const midRadius = innerRadius + (outerRadius - innerRadius) * 1.6;
-    const midX = cx + midRadius * Math.cos(-midAngle * RADIAN);
-    const midY = midRadius * Math.sin(-midAngle * RADIAN); // Relative Y for line calculation not quite right with just midY, need absolute
 
     // Correct line coordinates
     const sin = Math.sin(-RADIAN * midAngle);
@@ -69,9 +69,12 @@ const renderCustomLabel = (props) => {
 };
 
 export default function Expenses() {
+    const [currentDate, setCurrentDate] = useState(new Date());
+    const [viewMode, setViewMode] = useState('monthly'); // 'monthly' or 'total'
     const [transactions, setTransactions] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, balance: 0, hobby: 0, necessary: 0, salary: 0, freelance: 0, other: 0 });
+    const [globalSummary, setGlobalSummary] = useState({ totalIncome: 0, totalExpense: 0, balance: 0, hobby: 0, necessary: 0, salary: 0, freelance: 0, other: 0 });
     const [activeIndexExpense, setActiveIndexExpense] = useState(0);
     const [activeIndexIncome, setActiveIndexIncome] = useState(0);
     const [searchTerm, setSearchTerm] = useState('');
@@ -94,23 +97,50 @@ export default function Expenses() {
 
     useEffect(() => {
         loadData();
-    }, []);
+    }, [currentDate]);
 
     const loadData = async () => {
         try {
-            const [transactionsRes, statsRes] = await Promise.all([
-                expenseAPI.getAll(1, 1000), // Increased limit to fetch all records
+            const year = currentDate.getFullYear();
+            const month = currentDate.getMonth() + 1;
+
+            const [monthlyRes, statsRes] = await Promise.all([
+                expenseAPI.getSummary(year, month),
                 expenseAPI.getDashboardStats()
             ]);
 
-            const txData = transactionsRes.data.data || transactionsRes.data;
-            setTransactions(Array.isArray(txData) ? txData : []);
+            // Monthly Data
+            const monthlyData = monthlyRes.data;
+            setTransactions(monthlyData.expenses || []);
 
-            // Process stats for summary
+            // Calculate Monthly Summary
+            const monthlySum = {
+                totalIncome: 0,
+                totalExpense: 0,
+                balance: 0,
+                hobby: monthlyData.hobby || 0,
+                necessary: monthlyData.necessary || 0,
+                salary: 0,
+                freelance: 0,
+                other: 0
+            };
+
+            monthlyData.expenses.forEach(t => {
+                if (t.type === 'income') {
+                    monthlySum.totalIncome += t.amount;
+                    monthlySum[t.category] += t.amount;
+                } else {
+                    monthlySum.totalExpense += t.amount;
+                }
+            });
+            monthlySum.balance = monthlySum.totalIncome - monthlySum.totalExpense;
+            setSummary(monthlySum);
+
+            // Global Data (from dashboard stats)
             const globalStats = statsRes.data.global;
-            const categoryStats = statsRes.data.globalCategories;
+            const globalCategories = statsRes.data.globalCategories;
 
-            const newSummary = {
+            const newGlobalSum = {
                 totalIncome: globalStats.totalIncome || 0,
                 totalExpense: globalStats.totalExpense || 0,
                 balance: (globalStats.totalIncome || 0) - (globalStats.totalExpense || 0),
@@ -121,24 +151,20 @@ export default function Expenses() {
                 other: 0
             };
 
-            categoryStats.forEach(cat => {
-                if (newSummary.hasOwnProperty(cat._id)) {
-                    newSummary[cat._id] = cat.total;
+            globalCategories.forEach(cat => {
+                if (newGlobalSum.hasOwnProperty(cat._id)) {
+                    newGlobalSum[cat._id] = cat.total;
                 }
             });
-
-            setSummary(newSummary);
+            setGlobalSummary(newGlobalSum);
 
         } catch (error) {
             console.error('Error loading data:', error);
         }
     };
 
-    // Removed client-side calculateSummary as we now use server stats
-    const calculateSummary = (data) => {
-        // Legacy function kept if needed for optimistic updates, 
-        // but generally we should reload stats or update state manually
-    };
+    const handlePrevMonth = () => setCurrentDate(getPreviousMonth(currentDate));
+    const handleNextMonth = () => setCurrentDate(getNextMonth(currentDate));
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -147,27 +173,8 @@ export default function Expenses() {
                 ...formData,
                 amount: parseFloat(formData.amount)
             };
-            console.log('Submitting transaction:', transactionData);
 
-            const response = await expenseAPI.create(transactionData);
-            console.log('Transaction created successfully:', response.data);
-
-            // Update local state avoiding stale closures
-            setTransactions(prev => [response.data, ...prev]);
-
-            // Simple manual update for UI responsiveness
-            setSummary(prev => {
-                const amount = parseFloat(transactionData.amount);
-                const isIncome = transactionData.type === 'income';
-                return {
-                    ...prev,
-                    totalIncome: isIncome ? prev.totalIncome + amount : prev.totalIncome,
-                    totalExpense: !isIncome ? prev.totalExpense + amount : prev.totalExpense,
-                    balance: isIncome ? prev.balance + amount : prev.balance - amount,
-                    [transactionData.category]: (prev[transactionData.category] || 0) + amount
-                };
-            });
-
+            await expenseAPI.create(transactionData);
             setShowForm(false);
             setFormData({
                 title: '',
@@ -177,48 +184,34 @@ export default function Expenses() {
                 description: '',
                 date: new Date().toISOString().split('T')[0]
             });
+            loadData();
         } catch (error) {
             console.error('Error creating transaction:', error);
-            console.error('Error details:', error.response?.data);
-            alert(`Error: ${error.response?.data?.message || error.message || 'Failed to add transaction'}`);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Are you sure you want to delete this transaction?')) return;
+        if (!window.confirm('Delete this transaction?')) return;
         try {
             await expenseAPI.delete(id);
-            // Update local state without refetching
-            const deletedTransaction = transactions.find(t => t._id === id);
-            setTransactions(prev => prev.filter(t => t._id !== id));
-
-            if (deletedTransaction) {
-                setSummary(prev => {
-                    const amount = deletedTransaction.amount;
-                    const isIncome = deletedTransaction.type === 'income';
-                    return {
-                        ...prev,
-                        totalIncome: isIncome ? prev.totalIncome - amount : prev.totalIncome,
-                        totalExpense: !isIncome ? prev.totalExpense - amount : prev.totalExpense,
-                        balance: isIncome ? prev.balance - amount : prev.balance + amount,
-                        [deletedTransaction.category]: (prev[deletedTransaction.category] || 0) - amount
-                    };
-                });
-            }
+            loadData();
         } catch (error) {
-            console.error('Error deleting transaction:', error);
+            console.error('Error deleting:', error);
         }
     };
 
+    // Determine which data set to use for charts
+    const chartSource = viewMode === 'monthly' ? summary : globalSummary;
+
     const expenseData = [
-        { name: 'Hobby', value: summary.hobby, color: '#7c3aed' },
-        { name: 'Necessary', value: summary.necessary, color: '#4c1d95' }
+        { name: 'Hobby', value: chartSource.hobby, color: '#7c3aed' },
+        { name: 'Necessary', value: chartSource.necessary, color: '#4c1d95' }
     ];
 
     const incomeData = [
-        { name: 'Salary', value: summary.salary, color: '#8b5cf6' },
-        { name: 'Freelance', value: summary.freelance, color: '#6d28d9' },
-        { name: 'Other', value: summary.other, color: '#5b21b6' }
+        { name: 'Salary', value: chartSource.salary, color: '#8b5cf6' },
+        { name: 'Freelance', value: chartSource.freelance, color: '#6d28d9' },
+        { name: 'Other', value: chartSource.other, color: '#5b21b6' }
     ];
 
     const filteredTransactions = transactions.filter(t =>
@@ -229,10 +222,21 @@ export default function Expenses() {
     return (
         <div className="expenses-page">
             <div className="page-header">
-                <h1 className="text-gradient">Income & Expenses</h1>
-                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
-                    <Plus size={20} />
-                    Add Transaction
+                <h1 className="module-title text-gradient">Financial Tracker</h1>
+            </div>
+
+            <button className="btn btn-primary add-button" onClick={() => setShowForm(!showForm)}>
+                <Plus size={20} />
+                Add Entry
+            </button>
+
+            <div className="month-navigator">
+                <button className="nav-btn" onClick={handlePrevMonth}>
+                    <ChevronLeft size={24} />
+                </button>
+                <h2>{formatMonthYear(currentDate)}</h2>
+                <button className="nav-btn" onClick={handleNextMonth}>
+                    <ChevronRight size={24} />
                 </button>
             </div>
 
@@ -338,8 +342,8 @@ export default function Expenses() {
                         <ArrowUpCircle size={32} />
                     </div>
                     <div className="summary-content">
-                        <h4>Total Income</h4>
-                        <h2>₹{summary.totalIncome.toFixed(2)}</h2>
+                        <h4>Income ({viewMode === 'monthly' ? 'Month' : 'Total'})</h4>
+                        <h2>₹{chartSource.totalIncome.toFixed(2)}</h2>
                     </div>
                 </Card>
 
@@ -348,97 +352,117 @@ export default function Expenses() {
                         <ArrowDownCircle size={32} />
                     </div>
                     <div className="summary-content">
-                        <h4>Total Expenses</h4>
-                        <h2>₹{summary.totalExpense.toFixed(2)}</h2>
+                        <h4>Expenses ({viewMode === 'monthly' ? 'Month' : 'Total'})</h4>
+                        <h2>₹{chartSource.totalExpense.toFixed(2)}</h2>
                     </div>
                 </Card>
 
                 <Card className="summary-card balance">
-                    <div className="summary-icon" style={{ color: summary.balance >= 0 ? '#ec4899' : '#ef4444' }}>
+                    <div className="summary-icon" style={{ color: chartSource.balance >= 0 ? '#ec4899' : '#ef4444' }}>
                         <DollarSign size={32} />
                     </div>
                     <div className="summary-content">
-                        <h4>Balance</h4>
-                        <h2 style={{ color: summary.balance >= 0 ? '#10b981' : '#ef4444' }}>
-                            ₹{summary.balance.toFixed(2)}
+                        <h4>Balance ({viewMode === 'monthly' ? 'Month' : 'Total'})</h4>
+                        <h2 style={{ color: chartSource.balance >= 0 ? '#10b981' : '#ef4444' }}>
+                            ₹{chartSource.balance.toFixed(2)}
                         </h2>
                     </div>
                 </Card>
             </GravityContainer>
 
-            <div className="charts-row">
-                {summary.totalExpense > 0 && (
-                    <Card className="chart-card">
-                        <h3>Expense Breakdown</h3>
-                        <ResponsiveContainer width="100%" height={350}>
-                            <PieChart margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
-                                <Pie
-                                    data={expenseData.filter(d => d.value > 0)}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={70}
-                                    paddingAngle={2}
-                                    cornerRadius={0}
-                                    stroke="none"
-                                    activeIndex={activeIndexExpense}
-                                    activeShape={renderActiveShape}
-                                    onMouseEnter={onPieEnterExpense}
-                                    dataKey="value"
-                                    label={renderCustomLabel}
-                                    labelLine={false}
-                                >
-                                    {expenseData.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.color}
-                                            stroke={index === activeIndexExpense ? 'none' : '#0f172a'}
-                                        />
-                                    ))}
-                                </Pie>
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </Card>
-                )}
+            <div className="charts-section">
+                <div className="chart-controls">
+                    <h3>Analytics</h3>
+                    <div className="toggle-switch">
+                        <button
+                            className={`toggle-btn ${viewMode === 'monthly' ? 'active' : ''}`}
+                            onClick={() => setViewMode('monthly')}
+                        >
+                            Monthly
+                        </button>
+                        <button
+                            className={`toggle-btn ${viewMode === 'total' ? 'active' : ''}`}
+                            onClick={() => setViewMode('total')}
+                        >
+                            Total
+                        </button>
+                    </div>
+                </div>
 
-                {summary.totalIncome > 0 && (
-                    <Card className="chart-card">
-                        <h3>Income Sources</h3>
-                        <ResponsiveContainer width="100%" height={350}>
-                            <PieChart margin={{ top: 30, right: 30, bottom: 30, left: 30 }}>
-                                <Pie
-                                    data={incomeData.filter(d => d.value > 0)}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={50}
-                                    outerRadius={70}
-                                    paddingAngle={2}
-                                    cornerRadius={0}
-                                    stroke="none"
-                                    activeIndex={activeIndexIncome}
-                                    activeShape={renderActiveShape}
-                                    onMouseEnter={onPieEnterIncome}
-                                    dataKey="value"
-                                    label={renderCustomLabel}
-                                    labelLine={false}
-                                >
-                                    {incomeData.map((entry, index) => (
-                                        <Cell
-                                            key={`cell-${index}`}
-                                            fill={entry.color}
-                                            stroke={index === activeIndexIncome ? 'none' : '#0f172a'}
-                                        />
-                                    ))}
-                                </Pie>
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </Card>
-                )}
+                <div className="charts-row">
+                    {chartSource.totalExpense > 0 && (
+                        <Card className="chart-card">
+                            <h3>Expense Breakdown</h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                                    <Pie
+                                        data={expenseData.filter(d => d.value > 0)}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={4}
+                                        cornerRadius={4}
+                                        stroke="none"
+                                        activeIndex={activeIndexExpense}
+                                        activeShape={renderActiveShape}
+                                        onMouseEnter={onPieEnterExpense}
+                                        dataKey="value"
+                                        label={renderCustomLabel}
+                                        labelLine={false}
+                                    >
+                                        {expenseData.map((entry, index) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                                stroke={index === activeIndexExpense ? 'none' : '#0f172a'}
+                                            />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </Card>
+                    )}
+
+                    {chartSource.totalIncome > 0 && (
+                        <Card className="chart-card">
+                            <h3>Income Sources</h3>
+                            <ResponsiveContainer width="100%" height={300}>
+                                <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
+                                    <Pie
+                                        data={incomeData.filter(d => d.value > 0)}
+                                        cx="50%"
+                                        cy="50%"
+                                        innerRadius={60}
+                                        outerRadius={80}
+                                        paddingAngle={4}
+                                        cornerRadius={4}
+                                        stroke="none"
+                                        activeIndex={activeIndexIncome}
+                                        activeShape={renderActiveShape}
+                                        onMouseEnter={onPieEnterIncome}
+                                        dataKey="value"
+                                        label={renderCustomLabel}
+                                        labelLine={false}
+                                    >
+                                        {incomeData.map((entry, index) => (
+                                            <Cell
+                                                key={`cell-${index}`}
+                                                fill={entry.color}
+                                                stroke={index === activeIndexIncome ? 'none' : '#0f172a'}
+                                            />
+                                        ))}
+                                    </Pie>
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </Card>
+                    )}
+                </div>
             </div>
 
             <div className="expenses-list">
                 <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3>Recent Transactions</h3>
+                    <h3>Transactions for {formatMonthYear(currentDate)}</h3>
                     <div className="search-bar" style={{ position: 'relative', width: '250px' }}>
                         <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)' }} />
                         <input
@@ -494,10 +518,15 @@ export default function Expenses() {
             {filteredTransactions.length === 0 && !showForm && (
                 <div className="empty-state">
                     <DollarSign size={64} className="text-gradient" />
-                    <h3>No transactions found</h3>
-                    <p>{searchTerm ? 'Try a different search term' : 'Start tracking your income and expenses'}</p>
+                    <h3>No transactions in {formatMonthYear(currentDate)}</h3>
+                    <p>{searchTerm ? 'Try a different search term' : 'Start tracking your finances for this month'}</p>
                 </div>
             )}
         </div>
     );
 }
+
+
+
+
+
