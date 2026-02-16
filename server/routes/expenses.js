@@ -82,12 +82,7 @@ router.get('/dashboard-stats', async (req, res) => {
         const currentBalance = current.income - current.expense;
         const lastBalance = last.income - last.expense;
 
-        let percentageChange = 0;
-        if (lastBalance !== 0) {
-            percentageChange = ((currentBalance - lastBalance) / Math.abs(lastBalance)) * 100;
-        } else if (currentBalance !== 0) {
-            percentageChange = 100; // If last month was 0 and this month has balance
-        }
+
 
         const result = {
             recent: {
@@ -99,7 +94,7 @@ router.get('/dashboard-stats', async (req, res) => {
             monthComparison: {
                 currentBalance,
                 lastBalance,
-                percentageChange: Math.round(percentageChange)
+                hasLastMonthData: resultData.lastMonth.length > 0
             }
         };
 

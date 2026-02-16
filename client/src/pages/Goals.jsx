@@ -19,6 +19,7 @@ export default function Goals() {
     const [routines, setRoutines] = useState([]);
     const [subjects, setSubjects] = useState([]);
     const [expandedGoal, setExpandedGoal] = useState(null);
+    const [localProgress, setLocalProgress] = useState({}); // Buffer for smooth slider dragging
 
     useEffect(() => {
         loadGoals();
@@ -246,14 +247,38 @@ export default function Goals() {
                                     <div className="goal-actions">
                                         <label className="progress-label">
                                             Progress:
-                                            <input
-                                                type="range"
-                                                min="0"
-                                                max="100"
-                                                value={goal.progress}
-                                                onChange={(e) => updateProgress(goal._id, e.target.value)}
-                                                className="progress-slider"
-                                            />
+                                            {(() => {
+                                                const currentVal = localProgress[goal._id] !== undefined ? localProgress[goal._id] : goal.progress;
+                                                return (
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="100"
+                                                        value={currentVal}
+                                                        onChange={(e) => setLocalProgress({ ...localProgress, [goal._id]: e.target.value })}
+                                                        onMouseUp={() => {
+                                                            if (localProgress[goal._id] !== undefined) {
+                                                                updateProgress(goal._id, localProgress[goal._id]);
+                                                                const newLocal = { ...localProgress };
+                                                                delete newLocal[goal._id];
+                                                                setLocalProgress(newLocal);
+                                                            }
+                                                        }}
+                                                        onTouchEnd={() => {
+                                                            if (localProgress[goal._id] !== undefined) {
+                                                                updateProgress(goal._id, localProgress[goal._id]);
+                                                                const newLocal = { ...localProgress };
+                                                                delete newLocal[goal._id];
+                                                                setLocalProgress(newLocal);
+                                                            }
+                                                        }}
+                                                        className="progress-slider"
+                                                        style={{
+                                                            background: `linear-gradient(to right, #ec4899 ${currentVal}%, rgba(255, 255, 255, 0.1) ${currentVal}%)`
+                                                        }}
+                                                    />
+                                                );
+                                            })()}
                                         </label>
                                         <div className="status-buttons">
                                             {['on-track', 'behind', 'completed'].map(s => (

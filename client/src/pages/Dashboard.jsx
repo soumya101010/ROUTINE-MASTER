@@ -70,7 +70,7 @@ export default function Dashboard() {
                 totalIncome: totalStats.totalIncome,
                 totalExpense: totalStats.totalExpense,
                 balance: balance,
-                percentageChange: statsData.monthComparison?.percentageChange || 0
+                comparison: statsData.monthComparison || { currentBalance: 0, lastBalance: 0, hasLastMonthData: false }
             });
             setDailyData(trendData);
         } catch (error) {
@@ -124,6 +124,19 @@ export default function Dashboard() {
         { path: '/weekly-review', icon: ClipboardList, title: 'Weekly Review', badgeKey: 'review', color: 'cyan' }
     ];
 
+    const renderComparison = () => {
+        const { currentBalance, lastBalance, hasLastMonthData } = stats.comparison || {};
+
+        if (!hasLastMonthData) {
+            return "No data for last month";
+        }
+
+        const diff = currentBalance - lastBalance;
+        const absDiff = Math.abs(Math.round(diff));
+
+        return `₹${absDiff.toLocaleString()} from last month`;
+    };
+
     return (
         <div className="dashboard">
             {/* Mobile View */}
@@ -134,32 +147,41 @@ export default function Dashboard() {
                             <span className="label">Monthly Balance</span>
                             <h2 className="amount">₹{stats.balance.toLocaleString()}</h2>
                             <div className="trend-tag">
-                                {stats.percentageChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                <span>{stats.percentageChange >= 0 ? '+' : ''}{stats.percentageChange}% From last month</span>
+                                {stats.comparison?.hasLastMonthData && (
+                                    <TrendingUp
+                                        size={14}
+                                        style={{
+                                            transform: (stats.comparison.currentBalance - stats.comparison.lastBalance) >= 0 ? 'none' : 'scaleY(-1)',
+                                            display: 'inline-block'
+                                        }}
+                                    />
+                                )}
+                                <span>{renderComparison()}</span>
                             </div>
                         </div>
                         <div className="featured-chart-overlay">
-                            <ResponsiveContainer width="100%" height={120}>
-                                <AreaChart data={dailyData.slice(-15)} margin={{ top: 5, right: 10, left: -20, bottom: 0 }}>
+                            <ResponsiveContainer width="100%" height={220}> {/* Increased height */}
+                                <AreaChart data={dailyData.slice(-30)} margin={{ top: 50, right: 10, left: 10, bottom: 5 }}> {/* Adjusted padding */}
                                     <defs>
                                         <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#fff" stopOpacity={0.3} />
+                                            <stop offset="5%" stopColor="#fff" stopOpacity={0.5} /> {/* Increased opacity for pop */}
                                             <stop offset="95%" stopColor="#fff" stopOpacity={0} />
                                         </linearGradient>
                                     </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" /> {/* Added grid */}
                                     <XAxis
                                         dataKey="date"
                                         hide={false}
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} // More subtle ticks
                                         interval="preserveStartEnd"
                                     />
                                     <YAxis
                                         hide={false}
                                         axisLine={false}
                                         tickLine={false}
-                                        tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
+                                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} // More subtle ticks
                                         tickFormatter={(val) => `₹${val}`}
                                     />
                                     <Tooltip
@@ -167,13 +189,14 @@ export default function Dashboard() {
                                             if (active && payload && payload.length) {
                                                 return (
                                                     <div className="mini-tooltip" style={{
-                                                        background: 'rgba(255,255,255,0.2)',
+                                                        background: 'rgba(255,255,255,0.9)', /* Brighter tooltip */
                                                         backdropFilter: 'blur(4px)',
-                                                        padding: '2px 8px',
-                                                        borderRadius: '4px',
-                                                        fontSize: '10px',
-                                                        color: '#fff',
-                                                        border: '1px solid rgba(255,255,255,0.3)'
+                                                        padding: '4px 10px',
+                                                        borderRadius: '6px',
+                                                        fontSize: '11px',
+                                                        color: '#d946ef', /* Match gradient color */
+                                                        fontWeight: 'bold',
+                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                                                     }}>
                                                         ₹{payload[0].value.toLocaleString()}
                                                     </div>
@@ -181,16 +204,16 @@ export default function Dashboard() {
                                             }
                                             return null;
                                         }}
-                                        cursor={{ stroke: 'rgba(255,255,255,0.3)', strokeWidth: 1 }}
+                                        cursor={{ stroke: 'rgba(255,255,255,0.5)', strokeWidth: 1 }}
                                     />
                                     <Area
                                         type="monotone"
                                         dataKey="balanceTrend"
                                         stroke="#fff"
                                         fill="url(#balanceGradient)"
-                                        strokeWidth={2}
+                                        strokeWidth={3} /* Thicker line */
                                         dot={false}
-                                        activeDot={{ r: 4, fill: '#fff', strokeWidth: 0 }}
+                                        activeDot={{ r: 6, fill: '#fff', strokeWidth: 0 }}
                                     />
                                 </AreaChart>
                             </ResponsiveContainer>

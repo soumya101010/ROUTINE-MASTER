@@ -281,6 +281,10 @@
         /* Keep row layout */
         align-items: center;
         gap: var(--spacing-sm);
+        position: relative;
+        /* For absolute positioning of delete button */
+        padding-right: 40px;
+        /* Make space for delete button */
     }
 
     .study-item-right {
@@ -288,6 +292,17 @@
         /* Let it take only needed space */
         justify-content: flex-end;
         gap: var(--spacing-md);
+    }
+
+    .delete-btn {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(0, 0, 0, 0.2);
+        /* Slight background for visibility */
+        border-radius: 50%;
+        padding: 8px;
     }
 
     .progress-bar {

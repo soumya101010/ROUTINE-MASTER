@@ -379,11 +379,14 @@
 
     .featured-balance-card {
         background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
+        /* Reverted to Pink Gradient */
         border: none !important;
         padding: var(--spacing-xl) !important;
         border-radius: 24px !important;
-        min-height: 180px;
+        min-height: 280px;
+        /* Increased min-height for taller graph */
         color: #fff !important;
+        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
     }
 
     .module-cards-grid {
@@ -417,4 +420,91 @@
     .desktop-only {
         display: block !important;
     }
+}
+
+/* Strict Monthly Balance Card Layout - Adjusted for vertical hierarchy */
+.featured-balance-card {
+    position: relative;
+    overflow: hidden;
+    padding: 24px !important;
+    /* Increased padding */
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+}
+
+.featured-content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    /* Increased gap for visual hierarchy */
+    margin-bottom: 20px;
+    /* Push content away from graph */
+}
+
+.trend-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.95rem;
+    /* Increased size */
+    color: rgba(255, 255, 255, 1);
+    font-weight: 500;
+    margin-top: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    /* Glass background */
+    backdrop-filter: blur(8px);
+    /* Glass blur */
+    -webkit-backdrop-filter: blur(8px);
+    padding: 6px 14px;
+    /* Pill padding */
+    border-radius: 50px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    /* Subtle border */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.trend-tag svg {
+    display: inline-block;
+    transition: transform 0.3s ease;
+    animation: none !important;
+    /* STRICT: No float animation */
+}
+
+/* Ensure chart stays behind text with proper overlay behavior */
+.featured-chart-overlay {
+    position: relative;
+    /* Full bleed using negative margins to counteract card padding (24px) */
+    width: calc(100% + 48px);
+    margin-left: -24px;
+    margin-right: -24px;
+    margin-bottom: -24px;
+    height: 220px;
+    margin-top: auto;
+    z-index: 1;
+    pointer-events: none;
+    opacity: 0.9;
+    border-bottom-left-radius: 24px;
+    /* Match card radius for clean bottom corners */
+    border-bottom-right-radius: 24px;
+}
+
+.featured-balance-card .amount {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin: 0;
+    line-height: 1.1;
+    color: #fff;
+    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.featured-balance-card .label {
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 600;
 }

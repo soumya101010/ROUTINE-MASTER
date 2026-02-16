@@ -263,7 +263,52 @@
 
 .progress-slider {
     flex: 1;
-    accent-color: var(--color-accent-primary);
+    -webkit-appearance: none;
+    appearance: none;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.1);
+    /* Fallback */
+    border-radius: 10px;
+    outline: none;
+    cursor: pointer;
+}
+
+/* Chrome, Safari, Edge, Opera */
+.progress-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ec4899;
+    /* Pink Accent */
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.progress-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.8);
+}
+
+/* Firefox */
+.progress-slider::-moz-range-thumb {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #ec4899;
+    /* Pink Accent */
+    cursor: pointer;
+    border: 2px solid #fff;
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.5);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.progress-slider::-moz-range-thumb:hover {
+    transform: scale(1.1);
+    box-shadow: 0 0 15px rgba(236, 72, 153, 0.8);
 }
 
 .status-buttons {
