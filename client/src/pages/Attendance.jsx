@@ -242,7 +242,18 @@ export default function Attendance() {
                     <div className="form-steps">
                         {formStep === 1 && (
                             <div className="step-content">
-                                <h3>Select Subject</h3>
+                                <h3>Select Date & Subject</h3>
+                                <div className="date-input-container">
+                                    <label>Date</label>
+                                    <input
+                                        type="date"
+                                        value={formData.date}
+                                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                                        className="date-picker-input"
+                                    />
+                                </div>
+
+                                <h4>Subject</h4>
                                 <div className="subject-grid">
                                     {uniqueSubjects.length > 0 ? (
                                         uniqueSubjects.map(sub => (
