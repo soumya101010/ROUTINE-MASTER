@@ -135,7 +135,10 @@ export default function Dashboard() {
                             <h2 className="amount">₹{stats.balance.toLocaleString()}</h2>
                             <div className="trend-tag">
                                 {stats.percentageChange >= 0 ? <TrendingUp size={14} /> : <TrendingDown size={14} />}
-                                <span>{stats.percentageChange >= 0 ? '+' : ''}{stats.percentageChange}% From last month</span>
+                                <span>
+                                    {stats.percentageChange >= 0 ? '+' : ''}
+                                    {Math.abs(stats.percentageChange) > 999 ? '>999' : stats.percentageChange}% From last month
+                                </span>
                             </div>
                         </div>
                         <div className="featured-chart-overlay">
@@ -161,6 +164,7 @@ export default function Dashboard() {
                                         tickLine={false}
                                         tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 10 }}
                                         tickFormatter={(val) => `₹${val}`}
+                                        domain={[0, 'auto']}
                                     />
                                     <Tooltip
                                         content={({ active, payload }) => {
