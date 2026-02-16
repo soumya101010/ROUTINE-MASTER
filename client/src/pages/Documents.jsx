@@ -120,7 +120,7 @@ export default function Documents() {
             const normalizedPath = doc.filepath.replace(/\\/g, '/');
 
             // Get base URL from environment or default
-            const apiBase = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+            const apiBase = import.meta.env.VITE_API_URL || 'https://routine-master.onrender.com/api';
             // Remove '/api' from the end to get the server root
             const serverBase = apiBase.replace(/\/api$/, '');
 
