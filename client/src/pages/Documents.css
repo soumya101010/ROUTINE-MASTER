@@ -166,21 +166,7 @@
     position: absolute;
     top: 16px;
     right: 16px;
-    background: rgba(255, 255, 255, 0.1);
-    /* Glass Effect */
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(4px);
-    border-radius: var(--radius-sm);
-    color: var(--color-accent-danger);
-    cursor: pointer;
-    padding: 8px;
-    transition: all var(--transition-base);
     z-index: 10;
-}
-
-.delete-btn:hover {
-    transform: scale(1.1);
-    background: rgba(255, 255, 255, 0.2);
 }
 
 .document-card h4 {

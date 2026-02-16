@@ -175,6 +175,7 @@
     font-size: 0.875rem;
 }
 
+/* Module handles delete-btn styling globally via index.css */
 @media (max-width: 768px) {
     .expenses-page {
         padding: var(--spacing-md);

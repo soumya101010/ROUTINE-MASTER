@@ -309,6 +309,54 @@ a:hover {
 }
 
 /* ============================================
+   GLOBAL ACTION BUTTONS (Icons only)
+   ============================================ */
+
+.delete-btn,
+.edit-btn,
+.action-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(4px);
+  /* High stability fix for mobile transform glitches */
+  transform: perspective(1px) translateZ(0) scale(1);
+  backface-visibility: hidden;
+  -webkit-font-smoothing: subpixel-antialiased;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.delete-btn {
+  color: var(--color-accent-danger);
+  background: rgba(239, 68, 68, 0.1);
+}
+
+.edit-btn {
+  color: var(--color-text-secondary);
+}
+
+.delete-btn:hover,
+.delete-btn:active {
+  background: rgba(239, 68, 68, 0.2);
+  transform: perspective(1px) translateZ(0) scale(1.1);
+}
+
+.edit-btn:hover,
+.edit-btn:active {
+  color: var(--color-accent-primary);
+  background: rgba(255, 255, 255, 0.1);
+  transform: perspective(1px) translateZ(0) scale(1.1);
+}
+
+/* ============================================
    INPUTS & FORMS
    ============================================ */
 

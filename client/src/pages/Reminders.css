@@ -90,18 +90,7 @@
     animation: float 3s ease-in-out infinite;
 }
 
-.delete-btn {
-    background: none;
-    border: none;
-    color: var(--color-accent-danger);
-    cursor: pointer;
-    padding: var(--spacing-xs);
-    transition: all var(--transition-base);
-}
-
-.delete-btn:hover {
-    transform: scale(1.1);
-}
+/* Module handles delete-btn styling globally via index.css */
 
 .reminder-card h3 {
     margin-bottom: var(--spacing-sm);

@@ -224,10 +224,20 @@ export default function Goals() {
                                 </div>
                             </div>
 
+                            <button
+                                className="delete-btn"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    deleteGoal(goal._id);
+                                }}
+                            >
+                                <Trash2 size={18} />
+                            </button>
+
                             <div className="progress-bar-track">
                                 <div
                                     className="progress-bar-fill"
-                                    style={{ width: `${goal.progress}%`, background: getStatusColor(goal.status) }}
+                                    style={{ width: `${Math.min(100, Math.max(0, goal.progress))}%`, background: getStatusColor(goal.status) }}
                                 />
                             </div>
 
@@ -248,35 +258,39 @@ export default function Goals() {
                                         <label className="progress-label">
                                             Progress:
                                             {(() => {
-                                                const currentVal = localProgress[goal._id] !== undefined ? localProgress[goal._id] : goal.progress;
+                                                const currentVal = localProgress[goal._id] !== undefined ? localProgress[goal._id] : Math.min(100, Math.max(0, goal.progress));
                                                 return (
-                                                    <input
-                                                        type="range"
-                                                        min="0"
-                                                        max="100"
-                                                        value={currentVal}
-                                                        onChange={(e) => setLocalProgress({ ...localProgress, [goal._id]: e.target.value })}
-                                                        onMouseUp={() => {
-                                                            if (localProgress[goal._id] !== undefined) {
-                                                                updateProgress(goal._id, localProgress[goal._id]);
-                                                                const newLocal = { ...localProgress };
-                                                                delete newLocal[goal._id];
-                                                                setLocalProgress(newLocal);
-                                                            }
-                                                        }}
-                                                        onTouchEnd={() => {
-                                                            if (localProgress[goal._id] !== undefined) {
-                                                                updateProgress(goal._id, localProgress[goal._id]);
-                                                                const newLocal = { ...localProgress };
-                                                                delete newLocal[goal._id];
-                                                                setLocalProgress(newLocal);
-                                                            }
-                                                        }}
-                                                        className="progress-slider"
-                                                        style={{
-                                                            background: `linear-gradient(to right, #ec4899 ${currentVal}%, rgba(255, 255, 255, 0.1) ${currentVal}%)`
-                                                        }}
-                                                    />
+                                                    <div className="slider-wrapper">
+                                                        <input
+                                                            type="range"
+                                                            min="0"
+                                                            max="100"
+                                                            value={currentVal}
+                                                            onChange={(e) => setLocalProgress({ ...localProgress, [goal._id]: e.target.value })}
+                                                            onMouseUp={() => {
+                                                                if (localProgress[goal._id] !== undefined) {
+                                                                    updateProgress(goal._id, localProgress[goal._id]);
+                                                                    const newLocal = { ...localProgress };
+                                                                    delete newLocal[goal._id];
+                                                                    setLocalProgress(newLocal);
+                                                                }
+                                                            }}
+                                                            onTouchEnd={() => {
+                                                                if (localProgress[goal._id] !== undefined) {
+                                                                    updateProgress(goal._id, localProgress[goal._id]);
+                                                                    const newLocal = { ...localProgress };
+                                                                    delete newLocal[goal._id];
+                                                                    setLocalProgress(newLocal);
+                                                                }
+                                                            }}
+                                                            className="progress-slider"
+                                                            style={{
+                                                                backgroundSize: currentVal <= 0 ? '0% 100%' : `calc(${currentVal}% + ${10 - currentVal * 0.2}px) 100%`,
+                                                                backgroundImage: `linear-gradient(#ec4899, #ec4899)`,
+                                                                backgroundRepeat: 'no-repeat'
+                                                            }}
+                                                        />
+                                                    </div>
                                                 );
                                             })()}
                                         </label>
@@ -292,9 +306,6 @@ export default function Goals() {
                                                 </button>
                                             ))}
                                         </div>
-                                        <button className="delete-btn" onClick={() => deleteGoal(goal._id)}>
-                                            <Trash2 size={16} /> Delete
-                                        </button>
                                     </div>
                                 </div>
                             )}

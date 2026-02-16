@@ -108,7 +108,8 @@
 }
 
 .routine-card {
-    padding: var(--spacing-lg);
+    padding: var(--spacing-xl);
+    /* Increased from lg to xl */
     position: relative;
     overflow: hidden;
 }
@@ -123,31 +124,31 @@
 
 .routine-actions {
     position: absolute;
-    top: var(--spacing-lg);
-    right: var(--spacing-lg);
+    top: 20px;
+    right: 20px;
     display: flex;
-    gap: var(--spacing-sm);
+    gap: 12px;
+    /* Increased from sm (8px) to 12px */
     background: var(--glass-bg);
-    padding: 6px;
+    padding: 8px 12px;
+    /* Added horizontal padding */
     border-radius: var(--radius-md);
     backdrop-filter: blur(8px);
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
     z-index: 10;
 }
 
-.edit-btn {
-    background: none;
-    border: none;
-    color: var(--color-text-secondary);
-    cursor: pointer;
-    padding: var(--spacing-xs);
-    transition: all var(--transition-base);
+/* Reset buttons inside the actions container to ensure they flow correctly */
+.routine-actions button {
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin: 0;
 }
 
-.edit-btn:hover {
-    color: var(--color-accent-primary);
-    transform: scale(1.1);
-}
+/* Module handles delete-btn and edit-btn styling globally via index.css */
 
 .task-item {
     display: flex;

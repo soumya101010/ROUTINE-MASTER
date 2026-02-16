@@ -311,7 +311,7 @@ export default function Study() {
                         <div className="slider-container">
                             <CircularSlider
                                 size={70}
-                                value={item.progress || 0}
+                                value={Math.min(100, Math.max(0, item.progress || 0))}
                                 color={typeColors[item.type]}
                                 // Removed onChange to avoid re-rendering entire list on drag
                                 onCommit={(val) => {

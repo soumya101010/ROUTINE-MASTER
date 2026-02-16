@@ -233,23 +233,17 @@
     box-shadow: 0 0 15px var(--active-color);
 }
 
+.delete-btn-absolute:hover,
+.delete-btn-absolute:active {
+    background: rgba(255, 255, 255, 0.2);
+    transform: scale(1.1);
+}
+
+/* Module handles delete-btn positioning and transitions globally via index.css */
 .progress-text {
     font-size: 0.875rem;
     color: var(--color-text-secondary);
     min-width: 40px;
-}
-
-.delete-btn {
-    background: none;
-    border: none;
-    color: var(--color-accent-danger);
-    cursor: pointer;
-    padding: var(--spacing-xs);
-    transition: all var(--transition-base);
-}
-
-.delete-btn:hover {
-    transform: scale(1.1);
 }
 
 .empty-state {
@@ -277,32 +271,28 @@
     }
 
     .study-item-content {
-        flex-direction: row;
-        /* Keep row layout */
-        align-items: center;
         gap: var(--spacing-sm);
         position: relative;
-        /* For absolute positioning of delete button */
-        padding-right: 50px;
-        /* Increased safe space for delete button */
+        padding-right: 60px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+        min-height: 80px;
     }
 
     .study-item-right {
         width: auto;
-        /* Let it take only needed space */
         justify-content: flex-end;
         gap: var(--spacing-md);
     }
 
     .delete-btn {
         position: absolute;
-        right: 10px;
+        right: 16px;
         top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0, 0, 0, 0.2);
-        /* Slight background for visibility */
-        border-radius: 50%;
-        padding: 8px;
+        margin-top: -16px;
+        /* Half of 32px height */
+        transform: perspective(1px) translateZ(0);
+        /* Stability only, translateY removed to prevent hover jump */
     }
 
     .progress-bar {
