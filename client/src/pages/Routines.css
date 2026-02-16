@@ -113,6 +113,14 @@
     overflow: hidden;
 }
 
+.routine-card h3 {
+    margin: var(--spacing-md) 0;
+    color: var(--color-text-primary);
+    font-size: 1.25rem;
+    padding-right: 90px;
+    /* Prevent overlap with absolute actions */
+}
+
 .routine-actions {
     position: absolute;
     top: var(--spacing-lg);

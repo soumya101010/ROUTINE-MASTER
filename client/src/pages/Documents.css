@@ -146,6 +146,8 @@
 
 .document-card {
     padding: var(--spacing-lg);
+    position: relative;
+    /* For absolute delete button */
 }
 
 .document-header {
@@ -161,16 +163,24 @@
 }
 
 .delete-btn {
-    background: none;
-    border: none;
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.1);
+    /* Glass Effect */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(4px);
+    border-radius: var(--radius-sm);
     color: var(--color-accent-danger);
     cursor: pointer;
-    padding: var(--spacing-xs);
+    padding: 8px;
     transition: all var(--transition-base);
+    z-index: 10;
 }
 
 .delete-btn:hover {
     transform: scale(1.1);
+    background: rgba(255, 255, 255, 0.2);
 }
 
 .document-card h4 {
@@ -178,6 +188,8 @@
     font-size: 1.125rem;
     color: var(--color-text-primary);
     word-break: break-word;
+    padding-right: 50px;
+    /* Prevent overlap with absolute delete button */
 }
 
 .document-meta {

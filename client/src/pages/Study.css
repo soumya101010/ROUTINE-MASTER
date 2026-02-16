@@ -283,8 +283,8 @@
         gap: var(--spacing-sm);
         position: relative;
         /* For absolute positioning of delete button */
-        padding-right: 40px;
-        /* Make space for delete button */
+        padding-right: 50px;
+        /* Increased safe space for delete button */
     }
 
     .study-item-right {
