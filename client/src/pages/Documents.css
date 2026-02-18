@@ -167,6 +167,29 @@
     top: 16px;
     right: 16px;
     z-index: 10;
+
+    /* New Pink Styling */
+    background: rgba(255, 255, 255, 0.05);
+    /* Colorless semi-transparent */
+    color: #ec4899;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    /* Slightly rounded for modern look */
+    padding: 8px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.delete-btn:hover {
+    background: rgba(236, 72, 153, 0.1);
+    /* Slight pink tint on hover only */
+    transform: scale(1.1);
+    box-shadow: 0 0 10px rgba(236, 72, 153, 0.2);
+    border-color: rgba(236, 72, 153, 0.4);
 }
 
 .document-card h4 {

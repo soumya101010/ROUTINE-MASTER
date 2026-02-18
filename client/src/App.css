@@ -6,7 +6,7 @@
 
 .main-content {
   flex: 1;
-  padding-top: var(--spacing-md);
+  padding-top: var(--spacing-xl);
 }
 
 .server-wake-overlay {

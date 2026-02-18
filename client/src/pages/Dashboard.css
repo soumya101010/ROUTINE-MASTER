@@ -5,6 +5,11 @@
     margin: 0 auto;
 }
 
+.dashboard .glass-card {
+    backdrop-filter: blur(40px) saturate(200%);
+    -webkit-backdrop-filter: blur(40px) saturate(200%);
+}
+
 .dashboard-header {
     text-align: center;
     margin-bottom: var(--spacing-2xl);
@@ -95,10 +100,7 @@
     margin: var(--spacing-md) 0;
 }
 
-/* ============================================ */
-/* MODULE CARDS GRID — NEW DASHBOARD MODULES    */
-/* ============================================ */
-
+/* Module Cards Grid */
 .module-cards-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -106,242 +108,10 @@
     margin-top: var(--spacing-lg);
 }
 
-.module-cards-grid.desktop-grid {
-    grid-template-columns: repeat(5, 1fr);
-    gap: var(--spacing-lg);
-    margin-bottom: var(--spacing-2xl);
-}
-
 .module-card-link {
     text-decoration: none;
     color: inherit;
 }
-
-.module-card {
-    padding: var(--spacing-lg) var(--spacing-md) !important;
-    text-align: center;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    min-height: 130px;
-    cursor: pointer;
-    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
-    border: 1px solid rgba(255, 255, 255, 0.06) !important;
-    position: relative;
-    overflow: hidden;
-}
-
-
-
-/* Thin glowing edge border for all cards */
-.module-card::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    /* Optional spacing if needed, but border on ::before works best with inset */
-    border: 1px solid transparent;
-    z-index: 2;
-    transition: all 0.3s ease;
-    opacity: 0.8;
-    pointer-events: none;
-    /* Crucial: lets clicks pass through */
-}
-
-.module-card.blue::before {
-    border-color: #60a5fa;
-    box-shadow: 0 0 10px rgba(96, 165, 250, 0.5), inset 0 0 5px rgba(96, 165, 250, 0.1);
-}
-
-.module-card.purple::before {
-    border-color: #c084fc;
-    box-shadow: 0 0 10px rgba(192, 132, 252, 0.5), inset 0 0 5px rgba(192, 132, 252, 0.1);
-}
-
-.module-card.orange::before {
-    border-color: #fb923c;
-    box-shadow: 0 0 10px rgba(251, 146, 60, 0.5), inset 0 0 5px rgba(251, 146, 60, 0.1);
-}
-
-.module-card.pink::before {
-    border-color: #f472b6;
-    box-shadow: 0 0 10px rgba(244, 114, 182, 0.5), inset 0 0 5px rgba(244, 114, 182, 0.1);
-}
-
-.module-card.cyan::before {
-    border-color: #22d3ee;
-    box-shadow: 0 0 10px rgba(34, 211, 238, 0.5), inset 0 0 5px rgba(34, 211, 238, 0.1);
-}
-
-.module-card:hover::before {
-    opacity: 1;
-    box-shadow: 0 0 15px rgba(255, 255, 255, 0.1), 0 0 20px 2px currentColor;
-    /* Stronger glow on hover */
-}
-
-/* Color definitions for hover glow enhancement */
-.module-card.blue {
-    color: #60a5fa;
-}
-
-.module-card.purple {
-    color: #c084fc;
-}
-
-.module-card.orange {
-    color: #fb923c;
-}
-
-.module-card.pink {
-    color: #f472b6;
-}
-
-.module-card.cyan {
-    color: #22d3ee;
-}
-
-.module-card:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 8px 30px rgba(233, 30, 99, 0.15);
-    border-color: rgba(233, 30, 99, 0.2) !important;
-}
-
-.module-card-icon {
-    width: 52px;
-    height: 52px;
-    border-radius: 16px;
-    background: linear-gradient(135deg, rgba(233, 30, 99, 0.15), rgba(236, 72, 153, 0.08));
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-accent-primary);
-    transition: transform 0.3s, box-shadow 0.3s;
-    animation: float 4s ease-in-out infinite;
-}
-
-/* Color Variants */
-.module-card-icon.blue {
-    background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(37, 99, 235, 0.1));
-    color: #60a5fa;
-    box-shadow: 0 0 15px rgba(59, 130, 246, 0.1);
-}
-
-.module-card-icon.purple {
-    background: linear-gradient(135deg, rgba(168, 85, 247, 0.2), rgba(147, 51, 234, 0.1));
-    color: #c084fc;
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.1);
-}
-
-.module-card-icon.orange {
-    background: linear-gradient(135deg, rgba(249, 115, 22, 0.2), rgba(234, 88, 12, 0.1));
-    color: #fb923c;
-    box-shadow: 0 0 15px rgba(249, 115, 22, 0.1);
-}
-
-.module-card-icon.pink {
-    background: linear-gradient(135deg, rgba(236, 72, 153, 0.2), rgba(219, 39, 119, 0.1));
-    color: #f472b6;
-    box-shadow: 0 0 15px rgba(236, 72, 153, 0.1);
-}
-
-.module-card-icon.cyan {
-    background: linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(8, 145, 178, 0.1));
-    color: #22d3ee;
-    box-shadow: 0 0 15px rgba(6, 182, 212, 0.1);
-}
-
-/* Hover Glows per color */
-.module-card.blue:hover {
-    border-color: rgba(59, 130, 246, 0.3) !important;
-    box-shadow: 0 8px 30px rgba(59, 130, 246, 0.15);
-}
-
-.module-card.purple:hover {
-    border-color: rgba(168, 85, 247, 0.3) !important;
-    box-shadow: 0 8px 30px rgba(168, 85, 247, 0.15);
-}
-
-.module-card.orange:hover {
-    border-color: rgba(249, 115, 22, 0.3) !important;
-    box-shadow: 0 8px 30px rgba(249, 115, 22, 0.15);
-}
-
-.module-card.pink:hover {
-    border-color: rgba(236, 72, 153, 0.3) !important;
-    box-shadow: 0 8px 30px rgba(236, 72, 153, 0.15);
-}
-
-.module-card.cyan:hover {
-    border-color: rgba(6, 182, 212, 0.3) !important;
-    box-shadow: 0 8px 30px rgba(6, 182, 212, 0.15);
-}
-
-/* Badge Colors */
-.module-card-badge.blue {
-    color: #60a5fa;
-    background: rgba(59, 130, 246, 0.1);
-}
-
-.module-card-badge.purple {
-    color: #c084fc;
-    background: rgba(168, 85, 247, 0.1);
-}
-
-.module-card-badge.orange {
-    color: #fb923c;
-    background: rgba(249, 115, 22, 0.1);
-}
-
-.module-card-badge.pink {
-    color: #f472b6;
-    background: rgba(236, 72, 153, 0.1);
-}
-
-.module-card-badge.cyan {
-    color: #22d3ee;
-    background: rgba(6, 182, 212, 0.1);
-}
-
-@keyframes float {
-    0% {
-        transform: translateY(0px);
-    }
-
-    50% {
-        transform: translateY(-3px);
-    }
-
-    100% {
-        transform: translateY(0px);
-    }
-}
-
-.module-card:hover .module-card-icon {
-    transform: scale(1.1);
-    box-shadow: 0 0 20px rgba(233, 30, 99, 0.2);
-}
-
-.module-card-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--color-text-primary);
-    margin: 0;
-    line-height: 1.2;
-}
-
-.module-card-badge {
-    font-size: 0.65rem;
-    font-weight: 600;
-    color: var(--color-accent-primary);
-    background: rgba(233, 30, 99, 0.1);
-    padding: 3px 10px;
-    border-radius: 50px;
-    letter-spacing: 0.3px;
-}
-
 
 /* Visibility Helpers */
 .mobile-only {
@@ -378,37 +148,28 @@
     }
 
     .featured-balance-card {
-        background: linear-gradient(135deg, #ec4899 0%, #db2777 100%) !important;
-        /* Reverted to Pink Gradient */
-        border: none !important;
+        background:
+            radial-gradient(circle at 10% 90%, rgba(236, 72, 153, 0.2) 0%, transparent 50%),
+            rgba(255, 255, 255, 0.03) !important;
+        backdrop-filter: blur(8px) saturate(150%) !important;
+        -webkit-backdrop-filter: blur(8px) saturate(150%) !important;
+        border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        border-top: 1px solid rgba(255, 255, 255, 0.2) !important;
+        border-left: 1px solid rgba(255, 255, 255, 0.15) !important;
+        box-shadow:
+            inset 0 0 30px rgba(236, 72, 153, 0.05),
+            0 20px 40px -10px rgba(0, 0, 0, 0.3) !important;
         padding: var(--spacing-xl) !important;
-        border-radius: 24px !important;
-        min-height: 280px;
-        /* Increased min-height for taller graph */
+        border-radius: 30px !important;
+        min-height: 420px;
         color: #fff !important;
-        box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04) !important;
+        overflow: hidden !important;
     }
 
     .module-cards-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-sm);
         margin-top: var(--spacing-md);
-    }
-
-    .module-card {
-        min-height: 110px;
-        padding: var(--spacing-md) !important;
-        gap: 8px;
-    }
-
-    .module-card-icon {
-        width: 44px;
-        height: 44px;
-        border-radius: 12px;
-    }
-
-    .module-card-title {
-        font-size: 0.78rem;
     }
 }
 
@@ -420,17 +181,36 @@
     .desktop-only {
         display: block !important;
     }
+
+    .module-cards-grid {
+        grid-template-columns: repeat(5, 1fr);
+        gap: var(--spacing-lg);
+    }
 }
 
-/* Strict Monthly Balance Card Layout - Adjusted for vertical hierarchy */
+/* Featured Balance Card */
 .featured-balance-card {
     position: relative;
     overflow: hidden;
     padding: 24px !important;
-    /* Increased padding */
     display: flex !important;
     flex-direction: column !important;
     justify-content: space-between !important;
+    background:
+        radial-gradient(circle at 0% 100%, rgba(236, 72, 153, 0.15) 0%, transparent 50%),
+        rgba(255, 255, 255, 0.03) !important;
+    backdrop-filter: blur(8px) saturate(150%) !important;
+    -webkit-backdrop-filter: blur(8px) saturate(150%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* No edge ray on the graph card */
+.featured-balance-card::after {
+    animation: none !important;
+    background: linear-gradient(135deg,
+            rgba(255, 255, 255, 0.1),
+            rgba(255, 255, 255, 0.05) 50%,
+            rgba(255, 255, 255, 0.0)) !important;
 }
 
 .featured-content {
@@ -440,9 +220,7 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 8px;
-    /* Increased gap for visual hierarchy */
     margin-bottom: 20px;
-    /* Push content away from graph */
 }
 
 .trend-tag {
@@ -450,20 +228,15 @@
     align-items: center;
     gap: 8px;
     font-size: 0.95rem;
-    /* Increased size */
     color: rgba(255, 255, 255, 1);
     font-weight: 500;
     margin-top: 8px;
     background: rgba(255, 255, 255, 0.15);
-    /* Glass background */
     backdrop-filter: blur(8px);
-    /* Glass blur */
     -webkit-backdrop-filter: blur(8px);
     padding: 6px 14px;
-    /* Pill padding */
     border-radius: 50px;
     border: 1px solid rgba(255, 255, 255, 0.2);
-    /* Subtle border */
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
 }
 
@@ -471,25 +244,14 @@
     display: inline-block;
     transition: transform 0.3s ease;
     animation: none !important;
-    /* STRICT: No float animation */
 }
 
-/* Ensure chart stays behind text with proper overlay behavior */
 .featured-chart-overlay {
     position: relative;
-    /* Full bleed using negative margins to counteract card padding (24px) */
-    width: calc(100% + 48px);
-    margin-left: -24px;
-    margin-right: -24px;
-    margin-bottom: -24px;
-    height: 220px;
+    width: 100%;
+    height: 280px;
     margin-top: auto;
     z-index: 1;
-    pointer-events: none;
-    opacity: 0.9;
-    border-bottom-left-radius: 24px;
-    /* Match card radius for clean bottom corners */
-    border-bottom-right-radius: 24px;
 }
 
 .featured-balance-card .amount {

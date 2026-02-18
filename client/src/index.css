@@ -29,10 +29,10 @@
   --gradient-secondary: linear-gradient(135deg, #f472b6 0%, #e91e63 100%);
   --gradient-success: linear-gradient(135deg, #10b981 0%, #ec4899 100%);
 
-  /* Glassmorphism */
-  --glass-bg: rgba(13, 13, 13, 0.7);
-  --glass-border: rgba(233, 30, 99, 0.2);
-  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.6);
+  /* Glassmorphism Refined */
+  --glass-bg: rgba(255, 255, 255, 0.03);
+  --glass-border: rgba(255, 255, 255, 0.1);
+  --glass-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
 
   /* Spacing */
   --spacing-xs: 0.25rem;
@@ -52,10 +52,6 @@
   --transition-fast: 0.15s ease;
   --transition-base: 0.3s ease;
   --transition-slow: 0.5s ease;
-
-  /* Header Sizes */
-  --header-size-desktop: 50px;
-  --header-size-mobile: 40px;
 
   /* Typography */
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -169,18 +165,6 @@ h6 {
 
 h1 {
   font-size: 3rem;
-  font-weight: 700;
-}
-
-.module-title {
-  display: block;
-  font-size: var(--header-size-desktop);
-  font-weight: 800;
-  letter-spacing: -1px;
-  line-height: 1.2;
-  margin-bottom: 0;
-  padding: 0.1em 0;
-  width: 100%;
 }
 
 h2 {
@@ -223,22 +207,15 @@ a:hover {
 
 .glass-card {
   background: var(--glass-bg);
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 105, 180, 0.5);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--glass-shadow);
   transition: all 0.3s ease;
 }
 
-.glass-card:hover {
-  background: var(--color-surface-hover);
-  border-color: rgba(255, 105, 180, 0.8);
-  transform: translateY(-2px);
-  box-shadow:
-    0 0 6px rgba(255, 105, 180, 0.6),
-    0 4px 16px rgba(0, 0, 0, 0.4);
-}
+
 
 /* ============================================
    BUTTONS
@@ -308,52 +285,53 @@ a:hover {
   color: white;
 }
 
-/* ============================================
-   GLOBAL ACTION BUTTONS (Icons only)
-   ============================================ */
-
-.delete-btn,
+/* Action Buttons (Edit, Delete, etc.) */
+.action-btn,
 .edit-btn,
-.action-btn {
-  width: 32px;
-  height: 32px;
+.delete-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  padding: 0;
-  border-radius: var(--radius-sm);
-  flex-shrink: 0;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.05);
-  backdrop-filter: blur(4px);
-  /* High stability fix for mobile transform glitches */
-  transform: perspective(1px) translateZ(0) scale(1);
-  backface-visibility: hidden;
-  -webkit-font-smoothing: subpixel-antialiased;
-  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.delete-btn {
-  color: var(--color-accent-danger);
-  background: rgba(239, 68, 68, 0.1);
-}
-
-.edit-btn {
+  background: transparent;
+  /* No background by default */
+  border: none;
+  /* No border */
   color: var(--color-text-secondary);
+  cursor: pointer;
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  transition: all var(--transition-base);
 }
 
-.delete-btn:hover,
-.delete-btn:active {
-  background: rgba(239, 68, 68, 0.2);
-  transform: perspective(1px) translateZ(0) scale(1.1);
+.edit-btn:hover {
+  background: transparent !important;
+  /* Ensure no box on hover */
+  border: none !important;
+  /* Force no border */
+  color: var(--color-accent-secondary);
+  /* Pink/Magenta identifier */
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.6));
+  /* Neon pink glow */
 }
 
-.edit-btn:hover,
-.edit-btn:active {
+.delete-btn:hover {
+  background: transparent !important;
+  /* Ensure no box on hover */
+  border: none !important;
+  /* Force no border */
+  color: var(--color-accent-danger);
+  /* Red identifier */
+  transform: scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(239, 68, 68, 0.6));
+  /* Neon red glow */
+}
+
+/* Active/Selected state if needed */
+.action-btn.active {
+  background: transparent;
   color: var(--color-accent-primary);
-  background: rgba(255, 255, 255, 0.1);
-  transform: perspective(1px) translateZ(0) scale(1.1);
+  filter: drop-shadow(0 0 8px rgba(233, 30, 99, 0.6));
 }
 
 /* ============================================
@@ -380,6 +358,32 @@ select:focus {
   outline: none;
   border-color: var(--color-accent-primary);
   box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
+}
+
+select {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='rgba(255,255,255,0.5)' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  padding-right: 36px;
+  cursor: pointer;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+select option {
+  background: #0f0a1a;
+  color: var(--color-text-primary);
+  padding: 10px 14px;
+  border: none;
+}
+
+select option:checked,
+select option:hover {
+  background: linear-gradient(0deg, rgba(233, 30, 99, 0.3) 0%, rgba(233, 30, 99, 0.3) 100%);
+  color: #fff;
 }
 
 /* ============================================
@@ -450,6 +454,11 @@ select:focus {
   -webkit-text-fill-color: transparent;
   background-clip: text;
   animation: textShimmer 4s ease-in-out infinite;
+
+  /* Fix for clipped descenders */
+  line-height: 1.4;
+  padding-bottom: 0.2em;
+  display: inline-block;
 }
 
 @keyframes textShimmerCrimson {
@@ -554,16 +563,9 @@ select:focus {
    RESPONSIVE
    ============================================ */
 
-@media (max-width: 1024px) {
+@media (max-width: 768px) {
   h1 {
-    font-size: 2.25rem;
-  }
-
-  .module-title {
-    font-size: var(--header-size-mobile);
-    letter-spacing: -1.5px;
-    line-height: 1.1;
-    padding: 0.2em 0;
+    font-size: 2.5rem;
   }
 
   h2 {
@@ -604,11 +606,13 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   }
 
   /* Ensure backdrop-filter works on Android */
+  /* Ensure backdrop-filter works on Android */
   .glass-card {
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    /* Android fallback */
-    background: rgba(13, 13, 13, 0.85);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    /* Android fallback - using new transparent var, but slightly more opaque for readability if blur fails */
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
   }
 
   /* Optimize animations for mobile performance - removed global wildcard as it breaks position:fixed */

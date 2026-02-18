@@ -1,9 +1,9 @@
 import './Card.css';
 
-export default function Card({ children, className = '', onClick, hover = true }) {
+export default function Card({ children, className = '', onClick, hover = true, color = '' }) {
     return (
         <div
-            className={`glass-card ${hover ? 'card-hover' : ''} ${className}`}
+            className={`glass-card ${color} ${hover ? 'card-hover' : ''} ${className}`}
             onClick={onClick}
         >
             {children}

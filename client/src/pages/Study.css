@@ -72,13 +72,15 @@
     justify-content: space-between;
     align-items: center;
     padding: var(--spacing-md);
-    background: var(--color-surface);
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
     border-radius: var(--radius-sm);
     transition: all var(--transition-base);
 }
 
 .study-item-content:hover {
-    background: var(--color-surface-hover);
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.2);
 }
 
 .study-item-left {

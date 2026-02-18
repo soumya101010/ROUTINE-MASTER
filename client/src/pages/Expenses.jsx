@@ -1,88 +1,129 @@
 import { useEffect, useState } from 'react';
-import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle, Search, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Plus, Trash2, DollarSign, TrendingUp, TrendingDown, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
 import { expenseAPI } from '../utils/api';
-import { getPreviousMonth, getNextMonth, formatMonthYear } from '../utils/dateHelpers';
 import './Expenses.css';
-
 const RADIAN = Math.PI / 180;
 
+/* ─── Variable-radius sector (thickness scales with %) ─── */
+const renderVariableShape = (props) => {
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, percent } = props;
+    const minThickness = 12;
+    const maxOuter = outerRadius + 15;
+    const scaled = innerRadius + minThickness + (maxOuter - innerRadius - minThickness) * Math.sqrt(percent);
+    return (
+        <Sector
+            cx={cx} cy={cy}
+            innerRadius={innerRadius}
+            outerRadius={scaled}
+            startAngle={startAngle}
+            endAngle={endAngle}
+            fill={fill}
+        />
+    );
+};
+
+/* ─── Active shape with same scaling + slight expansion ─── */
 const renderActiveShape = (props) => {
-    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, payload, percent, value } = props;
+    const { cx, cy, innerRadius, outerRadius, startAngle, endAngle, fill, percent } = props;
+    const minThickness = 12;
+    const maxOuter = outerRadius + 15;
+    const scaled = innerRadius + minThickness + (maxOuter - innerRadius - minThickness) * Math.sqrt(percent);
     return (
         <g>
-            <defs>
-                <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-                    <feGaussianBlur stdDeviation="4" result="coloredBlur" />
-                    <feMerge>
-                        <feMergeNode in="coloredBlur" />
-                        <feMergeNode in="SourceGraphic" />
-                    </feMerge>
-                </filter>
-            </defs>
             <Sector
-                cx={cx}
-                cy={cy}
-                innerRadius={innerRadius}
-                outerRadius={outerRadius + 6}
+                cx={cx} cy={cy}
+                innerRadius={innerRadius - 2}
+                outerRadius={scaled + 6}
                 startAngle={startAngle}
                 endAngle={endAngle}
-                fill="#ffffff"
-                filter="url(#glow)"
-                cornerRadius={0}
+                fill={fill}
             />
         </g>
     );
 };
 
-const renderCustomLabel = (props) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent, index, name } = props;
-    const radius = innerRadius + (outerRadius - innerRadius) * 2.5;
-    const x = cx + radius * Math.cos(-midAngle * RADIAN);
-    const y = cy + radius * Math.sin(-midAngle * RADIAN);
-    const midRadius = innerRadius + (outerRadius - innerRadius) * 1.6;
+/* ─── Clean Minimal Labels ─── */
+const renderMinimalLabel = (props) => {
+    const { cx, cy, midAngle, outerRadius, percent, name, fill } = props;
+    if (percent < 0.03) return null;
 
-    // Correct line coordinates
     const sin = Math.sin(-RADIAN * midAngle);
     const cos = Math.cos(-RADIAN * midAngle);
-    const sx = cx + (outerRadius + 5) * cos;
-    const sy = cy + (outerRadius + 5) * sin;
-    const mx = cx + (outerRadius + 20) * cos;
-    const my = cy + (outerRadius + 20) * sin;
-    const ex = mx + (cos >= 0 ? 1 : -1) * 12;
+    const sx = cx + (outerRadius + 6) * cos;
+    const sy = cy + (outerRadius + 6) * sin;
+    const mx = cx + (outerRadius + 22) * cos;
+    const my = cy + (outerRadius + 22) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 14;
     const ey = my;
     const textAnchor = cos >= 0 ? 'start' : 'end';
 
     return (
         <g>
-            <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke="rgba(255,255,255,0.5)" fill="none" />
-            <text x={ex + (cos >= 0 ? 1 : -1) * 8} y={ey} textAnchor={textAnchor} fill="#ffffff" dy={-6} fontSize={14} fontWeight="bold">
+            <path
+                d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`}
+                stroke="rgba(255,255,255,0.2)"
+                strokeWidth={1}
+                fill="none"
+            />
+            <circle cx={sx} cy={sy} r={2} fill={fill || 'rgba(255,255,255,0.4)'} />
+            <text
+                x={ex + (cos >= 0 ? 1 : -1) * 6}
+                y={ey}
+                textAnchor={textAnchor}
+                fill="rgba(255,255,255,0.7)"
+                fontSize={12}
+                fontWeight="500"
+                dominantBaseline="central"
+            >
                 {`${(percent * 100).toFixed(0)}%`}
-            </text>
-            <text x={ex + (cos >= 0 ? 1 : -1) * 8} y={ey} textAnchor={textAnchor} fill="rgba(255,255,255,0.5)" dy={14} fontSize={10}>
-                {name}
             </text>
         </g>
     );
 };
 
+/* ─── Chart Center Label Component ─── */
+const ChartCenterLabel = ({ total, label }) => (
+    <div className="chart-center-label">
+        <span className="chart-center-amount">₹{total.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+        <span className="chart-center-text">{label}</span>
+    </div>
+);
+
+/* ─── Custom Legend Component ─── */
+const ChartLegend = ({ data, total }) => (
+    <div className="chart-legend">
+        {data.filter(d => d.value > 0).map((item, i) => (
+            <div key={i} className="chart-legend-item">
+                <div className="chart-legend-dot" style={{ background: item.color, boxShadow: `0 0 8px ${item.color}60` }} />
+                <div className="chart-legend-info">
+                    <span className="chart-legend-name">{item.name}</span>
+                    <span className="chart-legend-value">₹{item.value.toLocaleString('en-IN', { maximumFractionDigits: 0 })}</span>
+                </div>
+                <span className="chart-legend-pct">{total > 0 ? `${((item.value / total) * 100).toFixed(0)}%` : '0%'}</span>
+            </div>
+        ))}
+    </div>
+);
+
 export default function Expenses() {
-    const [currentDate, setCurrentDate] = useState(new Date());
-    const [viewMode, setViewMode] = useState('monthly'); // 'monthly' or 'total'
     const [transactions, setTransactions] = useState([]);
     const [showForm, setShowForm] = useState(false);
-    const [summary, setSummary] = useState({ totalIncome: 0, totalExpense: 0, balance: 0, hobby: 0, necessary: 0, salary: 0, freelance: 0, other: 0 });
-    const [globalSummary, setGlobalSummary] = useState({ totalIncome: 0, totalExpense: 0, balance: 0, hobby: 0, necessary: 0, salary: 0, freelance: 0, other: 0 });
+    const [summary, setSummary] = useState({
+        totalIncome: 0, totalExpense: 0, balance: 0,
+        food: 0, transport: 0, shopping: 0, bills: 0, education: 0,
+        health: 0, entertainment: 0, hobby: 0, necessary: 0,
+        salary: 0, freelance: 0, investments: 0, gifts: 0, other: 0
+    });
     const [activeIndexExpense, setActiveIndexExpense] = useState(0);
     const [activeIndexIncome, setActiveIndexIncome] = useState(0);
-    const [searchTerm, setSearchTerm] = useState('');
     const [formData, setFormData] = useState({
         title: '',
         amount: '',
         type: 'expense',
-        category: 'necessary',
+        category: 'food',
         description: '',
         date: new Date().toISOString().split('T')[0]
     });
@@ -97,74 +138,48 @@ export default function Expenses() {
 
     useEffect(() => {
         loadData();
-    }, [currentDate]);
+    }, []);
 
     const loadData = async () => {
         try {
-            const year = currentDate.getFullYear();
-            const month = currentDate.getMonth() + 1;
-
-            const [monthlyRes, statsRes] = await Promise.all([
-                expenseAPI.getSummary(year, month),
+            const [transactionsRes, statsRes] = await Promise.all([
+                expenseAPI.getAll(1, 20),
                 expenseAPI.getDashboardStats()
             ]);
 
-            // Monthly Data
-            const monthlyData = monthlyRes.data;
-            setTransactions(monthlyData.expenses || []);
+            setTransactions(transactionsRes.data.data);
 
-            // Calculate Monthly Summary
-            const monthlySum = {
-                totalIncome: 0,
-                totalExpense: 0,
-                balance: 0,
-                hobby: monthlyData.hobby || 0,
-                necessary: monthlyData.necessary || 0,
-                salary: 0,
-                freelance: 0,
-                other: 0
-            };
-
-            monthlyData.expenses.forEach(t => {
-                if (t.type === 'income') {
-                    monthlySum.totalIncome += t.amount;
-                    monthlySum[t.category] += t.amount;
-                } else {
-                    monthlySum.totalExpense += t.amount;
-                }
-            });
-            monthlySum.balance = monthlySum.totalIncome - monthlySum.totalExpense;
-            setSummary(monthlySum);
-
-            // Global Data (from dashboard stats)
+            // Process stats for summary
             const globalStats = statsRes.data.global;
-            const globalCategories = statsRes.data.globalCategories;
+            const categoryStats = statsRes.data.globalCategories;
 
-            const newGlobalSum = {
+            const newSummary = {
                 totalIncome: globalStats.totalIncome || 0,
                 totalExpense: globalStats.totalExpense || 0,
                 balance: (globalStats.totalIncome || 0) - (globalStats.totalExpense || 0),
-                hobby: 0,
-                necessary: 0,
-                salary: 0,
-                freelance: 0,
-                other: 0
+                food: 0, transport: 0, shopping: 0, bills: 0, education: 0,
+                health: 0, entertainment: 0, hobby: 0, necessary: 0,
+                salary: 0, freelance: 0, investments: 0, gifts: 0, other: 0
             };
 
-            globalCategories.forEach(cat => {
-                if (newGlobalSum.hasOwnProperty(cat._id)) {
-                    newGlobalSum[cat._id] = cat.total;
+            categoryStats.forEach(cat => {
+                if (newSummary.hasOwnProperty(cat._id)) {
+                    newSummary[cat._id] = cat.total;
                 }
             });
-            setGlobalSummary(newGlobalSum);
+
+            setSummary(newSummary);
 
         } catch (error) {
             console.error('Error loading data:', error);
         }
     };
 
-    const handlePrevMonth = () => setCurrentDate(getPreviousMonth(currentDate));
-    const handleNextMonth = () => setCurrentDate(getNextMonth(currentDate));
+    // Removed client-side calculateSummary as we now use server stats
+    const calculateSummary = (data) => {
+        // Legacy function kept if needed for optimistic updates, 
+        // but generally we should reload stats or update state manually
+    };
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -173,70 +188,99 @@ export default function Expenses() {
                 ...formData,
                 amount: parseFloat(formData.amount)
             };
+            console.log('Submitting transaction:', transactionData);
 
-            await expenseAPI.create(transactionData);
+            const response = await expenseAPI.create(transactionData);
+            console.log('Transaction created successfully:', response.data);
+
+            // Update local state without refetching (simple append)
+            // Note: This won't update the global summary stats immediately unless we refetch or incorrectly calc
+            const newTransactions = [response.data, ...transactions];
+            setTransactions(newTransactions);
+
+            // Simple manual update for UI responsiveness
+            setSummary(prev => {
+                const amount = parseFloat(transactionData.amount);
+                const isIncome = transactionData.type === 'income';
+                return {
+                    ...prev,
+                    totalIncome: isIncome ? prev.totalIncome + amount : prev.totalIncome,
+                    totalExpense: !isIncome ? prev.totalExpense + amount : prev.totalExpense,
+                    balance: isIncome ? prev.balance + amount : prev.balance - amount,
+                    [transactionData.category]: (prev[transactionData.category] || 0) + amount
+                };
+            });
+
             setShowForm(false);
             setFormData({
                 title: '',
                 amount: '',
                 type: 'expense',
-                category: 'necessary',
+                category: 'food',
                 description: '',
                 date: new Date().toISOString().split('T')[0]
             });
-            loadData();
         } catch (error) {
             console.error('Error creating transaction:', error);
+            console.error('Error details:', error.response?.data);
+            alert(`Error: ${error.response?.data?.message || error.message || 'Failed to add transaction'}`);
         }
     };
 
     const handleDelete = async (id) => {
-        if (!window.confirm('Delete this transaction?')) return;
+        if (!window.confirm('Are you sure you want to delete this transaction?')) return;
         try {
             await expenseAPI.delete(id);
-            loadData();
+            // Update local state without refetching
+            const deletedTransaction = transactions.find(t => t._id === id);
+            const newTransactions = transactions.filter(t => t._id !== id);
+            setTransactions(newTransactions);
+
+            if (deletedTransaction) {
+                setSummary(prev => {
+                    const amount = deletedTransaction.amount;
+                    const isIncome = deletedTransaction.type === 'income';
+                    return {
+                        ...prev,
+                        totalIncome: isIncome ? prev.totalIncome - amount : prev.totalIncome,
+                        totalExpense: !isIncome ? prev.totalExpense - amount : prev.totalExpense,
+                        balance: isIncome ? prev.balance - amount : prev.balance + amount,
+                        [deletedTransaction.category]: (prev[deletedTransaction.category] || 0) - amount
+                    };
+                });
+            }
         } catch (error) {
-            console.error('Error deleting:', error);
+            console.error('Error deleting transaction:', error);
         }
     };
 
-    // Determine which data set to use for charts
-    const chartSource = viewMode === 'monthly' ? summary : globalSummary;
-
     const expenseData = [
-        { name: 'Hobby', value: chartSource.hobby, color: '#7c3aed' },
-        { name: 'Necessary', value: chartSource.necessary, color: '#4c1d95' }
+        { name: 'Food', value: summary.food, color: '#be123c' },
+        { name: 'Transport', value: summary.transport, color: '#e11d48' },
+        { name: 'Shopping', value: summary.shopping, color: '#f43f5e' },
+        { name: 'Bills', value: summary.bills, color: '#fb7185' },
+        { name: 'Education', value: summary.education, color: '#fda4af' },
+        { name: 'Health', value: summary.health, color: '#9f1239' },
+        { name: 'Entertainment', value: summary.entertainment, color: '#ff6b81' },
+        { name: 'Hobby', value: summary.hobby, color: '#db2777' },
+        { name: 'Necessary', value: summary.necessary, color: '#ec4899' }
     ];
 
     const incomeData = [
-        { name: 'Salary', value: chartSource.salary, color: '#8b5cf6' },
-        { name: 'Freelance', value: chartSource.freelance, color: '#6d28d9' },
-        { name: 'Other', value: chartSource.other, color: '#5b21b6' }
+        { name: 'Salary', value: summary.salary, color: '#059669' },
+        { name: 'Freelance', value: summary.freelance, color: '#34d399' },
+        { name: 'Investments', value: summary.investments, color: '#6ee7b7' },
+        { name: 'Gifts', value: summary.gifts, color: '#10b981' },
+        { name: 'Other', value: summary.other, color: '#a7f3d0' }
     ];
-
-    const filteredTransactions = transactions.filter(t =>
-        t.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        t.amount.toString().includes(searchTerm)
-    );
 
     return (
         <div className="expenses-page">
             <div className="page-header">
-                <h1 className="module-title text-gradient">Financial Tracker</h1>
-            </div>
-
-            <button className="btn btn-primary add-button" onClick={() => setShowForm(!showForm)}>
-                <Plus size={20} />
-                Add Entry
-            </button>
-
-            <div className="month-navigator">
-                <button className="nav-btn" onClick={handlePrevMonth}>
-                    <ChevronLeft size={24} />
-                </button>
-                <h2>{formatMonthYear(currentDate)}</h2>
-                <button className="nav-btn" onClick={handleNextMonth}>
-                    <ChevronRight size={24} />
+                <h1 className="module-title text-gradient">Income & Expenses</h1>
+                <button className="btn btn-primary" onClick={() => setShowForm(!showForm)}>
+                    <Plus size={20} />
+                    Add Transaction
                 </button>
             </div>
 
@@ -249,7 +293,7 @@ export default function Expenses() {
                                 <label>Type</label>
                                 <select
                                     value={formData.type}
-                                    onChange={(e) => setFormData({ ...formData, type: e.target.value, category: e.target.value === 'income' ? 'salary' : 'necessary' })}
+                                    onChange={(e) => setFormData({ ...formData, type: e.target.value, category: e.target.value === 'income' ? 'salary' : 'food' })}
                                 >
                                     <option value="expense">Expense</option>
                                     <option value="income">Income</option>
@@ -264,14 +308,23 @@ export default function Expenses() {
                                 >
                                     {formData.type === 'expense' ? (
                                         <>
-                                            <option value="necessary">Necessary</option>
-                                            <option value="hobby">Hobby</option>
+                                            <option value="food">🍔 Food</option>
+                                            <option value="transport">🚗 Transport</option>
+                                            <option value="shopping">🛍️ Shopping</option>
+                                            <option value="bills">📄 Bills</option>
+                                            <option value="education">📚 Education</option>
+                                            <option value="health">💊 Health</option>
+                                            <option value="entertainment">🎬 Entertainment</option>
+                                            <option value="hobby">🎮 Hobby</option>
+                                            <option value="necessary">📌 Necessary</option>
                                         </>
                                     ) : (
                                         <>
-                                            <option value="salary">Salary</option>
-                                            <option value="freelance">Freelance</option>
-                                            <option value="other">Other</option>
+                                            <option value="salary">💰 Salary</option>
+                                            <option value="freelance">💻 Freelance</option>
+                                            <option value="investments">📈 Investments</option>
+                                            <option value="gifts">🎁 Gifts</option>
+                                            <option value="other">📦 Other</option>
                                         </>
                                     )}
                                 </select>
@@ -342,8 +395,8 @@ export default function Expenses() {
                         <ArrowUpCircle size={32} />
                     </div>
                     <div className="summary-content">
-                        <h4>Income ({viewMode === 'monthly' ? 'Month' : 'Total'})</h4>
-                        <h2>₹{chartSource.totalIncome.toFixed(2)}</h2>
+                        <h4>Total Income</h4>
+                        <h2>₹{summary.totalIncome.toFixed(2)}</h2>
                     </div>
                 </Card>
 
@@ -352,138 +405,112 @@ export default function Expenses() {
                         <ArrowDownCircle size={32} />
                     </div>
                     <div className="summary-content">
-                        <h4>Expenses ({viewMode === 'monthly' ? 'Month' : 'Total'})</h4>
-                        <h2>₹{chartSource.totalExpense.toFixed(2)}</h2>
+                        <h4>Total Expenses</h4>
+                        <h2>₹{summary.totalExpense.toFixed(2)}</h2>
                     </div>
                 </Card>
 
                 <Card className="summary-card balance">
-                    <div className="summary-icon" style={{ color: chartSource.balance >= 0 ? '#ec4899' : '#ef4444' }}>
+                    <div className="summary-icon" style={{ color: summary.balance >= 0 ? '#ec4899' : '#ef4444' }}>
                         <DollarSign size={32} />
                     </div>
                     <div className="summary-content">
-                        <h4>Balance ({viewMode === 'monthly' ? 'Month' : 'Total'})</h4>
-                        <h2 style={{ color: chartSource.balance >= 0 ? '#10b981' : '#ef4444' }}>
-                            ₹{chartSource.balance.toFixed(2)}
+                        <h4>Balance</h4>
+                        <h2 style={{ color: summary.balance >= 0 ? '#10b981' : '#ef4444' }}>
+                            ₹{summary.balance.toFixed(2)}
                         </h2>
                     </div>
                 </Card>
             </GravityContainer>
 
-            <div className="charts-section">
-                <div className="chart-controls">
-                    <h3>Analytics</h3>
-                    <div className="toggle-switch">
-                        <button
-                            className={`toggle-btn ${viewMode === 'monthly' ? 'active' : ''}`}
-                            onClick={() => setViewMode('monthly')}
-                        >
-                            Monthly
-                        </button>
-                        <button
-                            className={`toggle-btn ${viewMode === 'total' ? 'active' : ''}`}
-                            onClick={() => setViewMode('total')}
-                        >
-                            Total
-                        </button>
-                    </div>
-                </div>
+            <div className="charts-row">
+                {summary.totalExpense > 0 && (
+                    <Card className="chart-card">
+                        <h3>Expense Breakdown</h3>
+                        <div className="chart-wrapper">
+                            <div className="chart-pie-area">
+                                <ResponsiveContainer width="100%" height={320}>
+                                    <PieChart>
+                                        <Pie
+                                            data={expenseData.filter(d => d.value > 0)}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={80}
+                                            outerRadius={105}
+                                            paddingAngle={2}
+                                            stroke="none"
+                                            shape={renderVariableShape}
+                                            dataKey="value"
+                                            label={renderMinimalLabel}
+                                            labelLine={false}
+                                            animationBegin={0}
+                                            animationDuration={800}
+                                            animationEasing="ease-out"
+                                        >
+                                            {expenseData.filter(d => d.value > 0).map((entry, index) => (
+                                                <Cell
+                                                    key={`exp-cell-${index}`}
+                                                    fill={entry.color}
+                                                    stroke="rgba(0,0,0,0.3)"
+                                                    strokeWidth={1}
+                                                />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <ChartCenterLabel total={summary.totalExpense} label="Expenses" />
+                            </div>
+                            <ChartLegend data={expenseData} total={summary.totalExpense} />
+                        </div>
+                    </Card>
+                )}
 
-                <div className="charts-row">
-                    {chartSource.totalExpense > 0 && (
-                        <Card className="chart-card">
-                            <h3>Expense Breakdown</h3>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                                    <Pie
-                                        data={expenseData.filter(d => d.value > 0)}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={4}
-                                        cornerRadius={4}
-                                        stroke="none"
-                                        activeIndex={activeIndexExpense}
-                                        activeShape={renderActiveShape}
-                                        onMouseEnter={onPieEnterExpense}
-                                        dataKey="value"
-                                        label={renderCustomLabel}
-                                        labelLine={false}
-                                    >
-                                        {expenseData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color}
-                                                stroke={index === activeIndexExpense ? 'none' : '#0f172a'}
-                                            />
-                                        ))}
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </Card>
-                    )}
-
-                    {chartSource.totalIncome > 0 && (
-                        <Card className="chart-card">
-                            <h3>Income Sources</h3>
-                            <ResponsiveContainer width="100%" height={300}>
-                                <PieChart margin={{ top: 20, right: 30, bottom: 20, left: 30 }}>
-                                    <Pie
-                                        data={incomeData.filter(d => d.value > 0)}
-                                        cx="50%"
-                                        cy="50%"
-                                        innerRadius={60}
-                                        outerRadius={80}
-                                        paddingAngle={4}
-                                        cornerRadius={4}
-                                        stroke="none"
-                                        activeIndex={activeIndexIncome}
-                                        activeShape={renderActiveShape}
-                                        onMouseEnter={onPieEnterIncome}
-                                        dataKey="value"
-                                        label={renderCustomLabel}
-                                        labelLine={false}
-                                    >
-                                        {incomeData.map((entry, index) => (
-                                            <Cell
-                                                key={`cell-${index}`}
-                                                fill={entry.color}
-                                                stroke={index === activeIndexIncome ? 'none' : '#0f172a'}
-                                            />
-                                        ))}
-                                    </Pie>
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </Card>
-                    )}
-                </div>
+                {summary.totalIncome > 0 && (
+                    <Card className="chart-card">
+                        <h3>Income Sources</h3>
+                        <div className="chart-wrapper">
+                            <div className="chart-pie-area">
+                                <ResponsiveContainer width="100%" height={320}>
+                                    <PieChart>
+                                        <Pie
+                                            data={incomeData.filter(d => d.value > 0)}
+                                            cx="50%"
+                                            cy="50%"
+                                            innerRadius={80}
+                                            outerRadius={105}
+                                            paddingAngle={2}
+                                            stroke="none"
+                                            shape={renderVariableShape}
+                                            dataKey="value"
+                                            label={renderMinimalLabel}
+                                            labelLine={false}
+                                            animationBegin={0}
+                                            animationDuration={800}
+                                            animationEasing="ease-out"
+                                        >
+                                            {incomeData.filter(d => d.value > 0).map((entry, index) => (
+                                                <Cell
+                                                    key={`inc-cell-${index}`}
+                                                    fill={entry.color}
+                                                    stroke="rgba(0,0,0,0.3)"
+                                                    strokeWidth={1}
+                                                />
+                                            ))}
+                                        </Pie>
+                                    </PieChart>
+                                </ResponsiveContainer>
+                                <ChartCenterLabel total={summary.totalIncome} label="Income" />
+                            </div>
+                            <ChartLegend data={incomeData} total={summary.totalIncome} />
+                        </div>
+                    </Card>
+                )}
             </div>
 
             <div className="expenses-list">
-                <div className="list-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                    <h3>Transactions for {formatMonthYear(currentDate)}</h3>
-                    <div className="search-bar" style={{ position: 'relative', width: '250px' }}>
-                        <Search size={18} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'rgba(255,255,255,0.5)' }} />
-                        <input
-                            type="text"
-                            placeholder="Search..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{
-                                width: '100%',
-                                padding: '8px 10px 8px 36px',
-                                background: 'rgba(255,255,255,0.05)',
-                                border: '1px solid rgba(255,255,255,0.1)',
-                                borderRadius: '8px',
-                                color: 'white',
-                                outline: 'none'
-                            }}
-                        />
-                    </div>
-                </div>
+                <h3>Recent Transactions</h3>
                 <GravityContainer className="expenses-grid">
-                    {filteredTransactions.map((transaction) => (
+                    {transactions.slice(0, 10).map((transaction) => (
                         <Card key={transaction._id} className={`expense-card ${transaction.type}`}>
                             <div className="expense-header">
                                 <h4>{transaction.title}</h4>
@@ -515,18 +542,13 @@ export default function Expenses() {
                 </GravityContainer>
             </div>
 
-            {filteredTransactions.length === 0 && !showForm && (
+            {transactions.length === 0 && !showForm && (
                 <div className="empty-state">
                     <DollarSign size={64} className="text-gradient" />
-                    <h3>No transactions in {formatMonthYear(currentDate)}</h3>
-                    <p>{searchTerm ? 'Try a different search term' : 'Start tracking your finances for this month'}</p>
+                    <h3>No transactions yet</h3>
+                    <p>Start tracking your income and expenses</p>
                 </div>
             )}
         </div>
     );
 }
-
-
-
-
-

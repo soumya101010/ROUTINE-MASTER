@@ -128,213 +128,143 @@ export default function Dashboard() {
         const { currentBalance, lastBalance, hasLastMonthData } = stats.comparison || {};
 
         if (!hasLastMonthData) {
-            return "No data for last month";
+            return { text: "No data for last month", color: 'rgba(255,255,255,0.6)', isUp: true };
         }
 
         const diff = currentBalance - lastBalance;
         const absDiff = Math.abs(Math.round(diff));
+        const isUp = diff >= 0;
 
-        return `₹${absDiff.toLocaleString()} from last month`;
+        return {
+            text: `₹${absDiff.toLocaleString()} from last month`,
+            color: isUp ? '#10b981' : '#ef4444',
+            isUp
+        };
     };
 
-    return (
-        <div className="dashboard">
-            {/* Mobile View */}
-            <div className="mobile-only">
-                <div className="featured-section">
-                    <Card className="featured-balance-card">
-                        <div className="featured-content">
-                            <span className="label">Monthly Balance</span>
-                            <h2 className="amount">₹{stats.balance.toLocaleString()}</h2>
-                            <div className="trend-tag">
-                                {stats.comparison?.hasLastMonthData && (
+    // Custom Tooltip for Glassmorphism
+    const CustomTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            return (
+                <div className="glass-card" style={{ padding: '0.75rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    <p style={{ color: '#cbd5e1', fontSize: '0.8rem', marginBottom: '0.25rem' }}>{label}</p>
+                    <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '1rem', margin: 0 }}>
+                        ₹{payload[0].value.toLocaleString()}
+                    </p>
+                </div>
+            );
+        }
+        return null;
+    };
+
+    // Shared Dashboard Content (for both Mobile and Desktop structures if they differ, but we can unify mostly)
+    const DashboardContent = () => (
+        <>
+            <div className="dashboard-header animate-fade-in">
+                <h1 className="module-title text-gradient">Dashboard</h1>
+                <p>Your complete overview</p>
+            </div>
+
+            {/* Featured Balance Card - "The Monolith" */}
+            <div className="featured-section animate-fade-in" style={{ animationDelay: '0.1s' }}>
+                <Card className="featured-balance-card glass-card">
+                    <div className="featured-content">
+                        <span className="label text-xs uppercase tracking-wider text-gray-400">Monthly Balance</span>
+                        <h2 className="amount text-5xl font-bold text-white my-2 text-neon">₹{stats.balance.toLocaleString()}</h2>
+                        {(() => {
+                            const comp = renderComparison();
+                            return (
+                                <div className="trend-tag" style={{
+                                    display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                    padding: '6px 14px', borderRadius: '999px',
+                                    background: `${comp.color}15`,
+                                    border: `1px solid ${comp.color}30`,
+                                    backdropFilter: 'blur(8px)'
+                                }}>
                                     <TrendingUp
-                                        size={14}
+                                        size={16}
                                         style={{
-                                            transform: (stats.comparison.currentBalance - stats.comparison.lastBalance) >= 0 ? 'none' : 'scaleY(-1)',
-                                            display: 'inline-block'
+                                            color: comp.color,
+                                            transform: comp.isUp ? 'none' : 'scaleY(-1)'
                                         }}
                                     />
-                                )}
-                                <span>{renderComparison()}</span>
-                            </div>
-                        </div>
-                        <div className="featured-chart-overlay">
-                            <ResponsiveContainer width="100%" height={220}> {/* Increased height */}
-                                <AreaChart data={dailyData.slice(-30)} margin={{ top: 50, right: 10, left: 10, bottom: 5 }}> {/* Adjusted padding */}
-                                    <defs>
-                                        <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                                            <stop offset="5%" stopColor="#fff" stopOpacity={0.5} /> {/* Increased opacity for pop */}
-                                            <stop offset="95%" stopColor="#fff" stopOpacity={0} />
-                                        </linearGradient>
-                                    </defs>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" /> {/* Added grid */}
-                                    <XAxis
-                                        dataKey="date"
-                                        hide={false}
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} // More subtle ticks
-                                        interval="preserveStartEnd"
-                                    />
-                                    <YAxis
-                                        hide={false}
-                                        axisLine={false}
-                                        tickLine={false}
-                                        tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 10 }} // More subtle ticks
-                                        tickFormatter={(val) => `₹${val}`}
-                                    />
-                                    <Tooltip
-                                        content={({ active, payload }) => {
-                                            if (active && payload && payload.length) {
-                                                return (
-                                                    <div className="mini-tooltip" style={{
-                                                        background: 'rgba(255,255,255,0.9)', /* Brighter tooltip */
-                                                        backdropFilter: 'blur(4px)',
-                                                        padding: '4px 10px',
-                                                        borderRadius: '6px',
-                                                        fontSize: '11px',
-                                                        color: '#d946ef', /* Match gradient color */
-                                                        fontWeight: 'bold',
-                                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                                    }}>
-                                                        ₹{payload[0].value.toLocaleString()}
-                                                    </div>
-                                                );
-                                            }
-                                            return null;
-                                        }}
-                                        cursor={{ stroke: 'rgba(255,255,255,0.5)', strokeWidth: 1 }}
-                                    />
-                                    <Area
-                                        type="monotone"
-                                        dataKey="balanceTrend"
-                                        stroke="#fff"
-                                        fill="url(#balanceGradient)"
-                                        strokeWidth={3} /* Thicker line */
-                                        dot={false}
-                                        activeDot={{ r: 6, fill: '#fff', strokeWidth: 0 }}
-                                    />
-                                </AreaChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </Card>
-                </div>
-
-                {/* Module Cards Grid — Mobile */}
-                <div className="module-cards-grid">
-                    {moduleCards.map(({ path, icon: Icon, title, badgeKey, color }) => (
-                        <Link key={path} to={path} className="module-card-link">
-                            <Card className={`module-card ${color}`}>
-                                <div className={`module-card-icon ${color}`}>
-                                    <Icon size={28} />
+                                    <span style={{ fontSize: '0.875rem', fontWeight: 500, color: comp.color }}>
+                                        {comp.text}
+                                    </span>
                                 </div>
-                                <h3 className="module-card-title">{title}</h3>
-                                <span className={`module-card-badge ${color}`}>
-                                    {moduleBadges[badgeKey]?.loading ? '...' : moduleBadges[badgeKey]?.text}
-                                </span>
-                            </Card>
-                        </Link>
-                    ))}
-                </div>
-            </div>
+                            );
+                        })()}
+                    </div>
 
-            {/* Desktop View */}
-            <div className="desktop-only">
-                <div className="dashboard-header">
-                    <h1 className="module-title text-gradient">Dashboard</h1>
-                    <p>Your complete overview</p>
-                </div>
-
-                {/* Module Cards Grid — Desktop */}
-                <div className="module-cards-grid desktop-grid">
-                    {moduleCards.map(({ path, icon: Icon, title, badgeKey, color }) => (
-                        <Link key={path} to={path} className="module-card-link">
-                            <Card className={`module-card ${color}`}>
-                                <div className={`module-card-icon ${color}`}>
-                                    <Icon size={28} />
-                                </div>
-                                <h3 className="module-card-title">{title}</h3>
-                                <span className={`module-card-badge ${color}`}>
-                                    {moduleBadges[badgeKey]?.loading ? '...' : moduleBadges[badgeKey]?.text}
-                                </span>
-                            </Card>
-                        </Link>
-                    ))}
-                </div>
-
-                <Card className="overview-section">
-                    <h2>Daily Income & Expenses (Last 30 Days)</h2>
-                    <ResponsiveContainer width="100%" height={300}>
-                        <AreaChart data={dailyData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-                            <defs>
-                                <linearGradient id="colorIncome" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                                </linearGradient>
-                                <linearGradient id="colorExpense" x1="0" y1="0" x2="0" y2="1">
-                                    <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                                    <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
-                                </linearGradient>
-                            </defs>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
-                            <XAxis
-                                dataKey="date"
-                                stroke="rgba(255,255,255,0.3)"
-                                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-                                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                                tickLine={false}
-                            />
-                            <YAxis
-                                stroke="rgba(255,255,255,0.3)"
-                                tick={{ fill: 'rgba(255,255,255,0.5)', fontSize: 12 }}
-                                axisLine={{ stroke: 'rgba(255,255,255,0.1)' }}
-                                tickLine={false}
-                            />
-                            <Tooltip
-                                contentStyle={{
-                                    backgroundColor: 'rgba(15, 23, 42, 0.9)',
-                                    border: '1px solid rgba(255,255,255,0.1)',
-                                    borderRadius: '8px',
-                                    color: '#f8fafc',
-                                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
-                                }}
-                            />
-                            <Legend iconType="circle" wrapperStyle={{ paddingTop: '10px' }} />
-                            <Area
-                                type="monotone"
-                                dataKey="income"
-                                stroke="#3b82f6"
-                                strokeWidth={3}
-                                fillOpacity={1}
-                                fill="url(#colorIncome)"
-                                name="Income"
-                                dot={{ stroke: '#3b82f6', strokeWidth: 2, r: 4, fill: '#1e293b' }}
-                                activeDot={{ r: 6, strokeWidth: 0 }}
-                            />
-                            <Area
-                                type="monotone"
-                                dataKey="expense"
-                                stroke="#ef4444"
-                                strokeWidth={3}
-                                fillOpacity={1}
-                                fill="url(#colorExpense)"
-                                name="Expense"
-                                dot={{ stroke: '#ef4444', strokeWidth: 2, r: 4, fill: '#1e293b' }}
-                                activeDot={{ r: 6, strokeWidth: 0 }}
-                            />
-                        </AreaChart>
-                    </ResponsiveContainer>
+                    <div className="featured-chart-overlay mt-6" style={{ height: '280px', width: '100%' }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                            <AreaChart data={dailyData.slice(-14)} margin={{ top: 20, right: 10, left: 0, bottom: 10 }}>
+                                <defs>
+                                    <linearGradient id="pinkGradient" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#ff69b4" stopOpacity={0.4} />
+                                        <stop offset="95%" stopColor="#ff69b4" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                                <XAxis
+                                    dataKey="date"
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                    dy={10}
+                                    interval="preserveStartEnd"
+                                />
+                                <YAxis
+                                    axisLine={false}
+                                    tickLine={false}
+                                    tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                    tickFormatter={(value) => `₹${value}`}
+                                    dx={-10}
+                                    width={45}
+                                />
+                                <Tooltip cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeDasharray: '3 3' }} content={<CustomTooltip />} />
+                                <Area
+                                    type="monotone"
+                                    dataKey="balanceTrend"
+                                    stroke="#ff69b4"
+                                    fill="url(#pinkGradient)"
+                                    strokeWidth={3}
+                                    activeDot={{ r: 6, fill: '#fff', stroke: '#ff69b4', strokeWidth: 2 }}
+                                />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
                 </Card>
-
-                <div className="dashboard-footer">
-                    <Card className="welcome-card">
-                        <TrendingUp size={32} className="text-gradient" />
-                        <h3>Your productivity hub</h3>
-                        <p>Track medications, build routines, manage studies, store documents, and monitor expenses all in one place.</p>
-                    </Card>
-                </div>
             </div>
+
+            {/* Module Cards Grid */}
+            <div className="module-cards-grid animate-fade-in" style={{ animationDelay: '0.2s', marginTop: '2rem' }}>
+                {moduleCards.map(({ path, icon: Icon, title, badgeKey, color }, index) => (
+                    <Link key={path} to={path} className="module-card-link">
+                        <Card className={`module-card ${color}`} color={color} hover={true}>
+                            <div className={`module-card-icon-wrapper ${color}`}>
+                                <Icon size={28} />
+                            </div>
+                            <h3 className="module-card-title">{title}</h3>
+                            <div className={`module-card-badge ${color}`}>
+                                {moduleBadges[badgeKey]?.loading ? (
+                                    <span className="animate-pulse">...</span>
+                                ) : (
+                                    moduleBadges[badgeKey]?.text
+                                )}
+                            </div>
+                        </Card>
+                    </Link>
+                ))}
+            </div>
+
+
+        </>
+    );
+
+    return (
+        <div className="dashboard container mx-auto px-4 py-6">
+            <DashboardContent />
         </div>
     );
 }

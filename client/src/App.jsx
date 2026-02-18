@@ -13,6 +13,7 @@ import Goals from './pages/Goals';
 import FocusMode from './pages/FocusMode';
 import Habits from './pages/Habits';
 import WeeklyReview from './pages/WeeklyReview';
+import ParticleBackground from './components/ParticleBackground';
 import './App.css';
 
 import { useEffect, useState } from 'react';
@@ -43,6 +44,7 @@ function App() {
   return (
     <Router>
       <div className="app">
+        <ParticleBackground />
         {isWakingUp && (
           <div className="server-wake-overlay">
             <div className="loader-content">
