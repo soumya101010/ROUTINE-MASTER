@@ -57,9 +57,18 @@ app.use('/api/focus', focusRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/weekly-review', weeklyReviewRoutes);
 
-// Health check
+// Health check — root, /health, and /api/health all return 200
+// These ensure UptimeRobot pings succeed and Render doesn't sleep the service
+app.get('/', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'RoutineMaster API is running' });
+});
+
+app.get('/health', (req, res) => {
+    res.status(200).json({ status: 'ok', uptime: process.uptime() });
+});
+
 app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', message: 'RoutineMaster API is running' });
+    res.status(200).json({ status: 'ok', message: 'RoutineMaster API is running', uptime: process.uptime() });
 });
 
 app.listen(PORT, () => {
