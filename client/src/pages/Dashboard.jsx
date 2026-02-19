@@ -16,6 +16,7 @@ export default function Dashboard() {
         balance: 0
     });
     const [dailyData, setDailyData] = useState([]);
+    const [habitTrendData, setHabitTrendData] = useState([]);
     const [moduleBadges, setModuleBadges] = useState({
         goals: { text: 'New', loading: true },
         focus: { text: 'Start', loading: true },
@@ -31,10 +32,11 @@ export default function Dashboard() {
 
     const loadStats = async () => {
         try {
-            const [remindersRes, routinesRes, expensesStatsRes] = await Promise.all([
+            const [remindersRes, routinesRes, expensesStatsRes, habitTrendRes] = await Promise.all([
                 reminderAPI.getAll(1, 1, { isActive: true }),
                 routineAPI.getAll(1, 1),
-                expenseAPI.getDashboardStats()
+                expenseAPI.getDashboardStats(),
+                habitAPI.getDailyTrend().catch(() => ({ data: { trend: [] } }))
             ]);
 
             const statsData = expensesStatsRes.data;
@@ -73,6 +75,7 @@ export default function Dashboard() {
                 comparison: statsData.monthComparison || { currentBalance: 0, lastBalance: 0, hasLastMonthData: false }
             });
             setDailyData(trendData);
+            setHabitTrendData((habitTrendRes.data.trend || []).slice(-14));
         } catch (error) {
             console.error('Error loading stats:', error);
         }
@@ -142,7 +145,22 @@ export default function Dashboard() {
         };
     };
 
-    // Custom Tooltip for Glassmorphism
+    // Custom Tooltip for Habit Graph
+    const HabitTooltip = ({ active, payload, label }) => {
+        if (active && payload && payload.length) {
+            const d = payload[0].payload;
+            return (
+                <div className="glass-card" style={{ padding: '0.75rem', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    <p style={{ color: '#cbd5e1', fontSize: '0.8rem', marginBottom: '0.25rem' }}>{label}</p>
+                    <p style={{ color: '#fff', fontWeight: 'bold', fontSize: '1rem', margin: 0 }}>
+                        {d.completed}/{d.total} habits <span style={{ color: '#a78bfa', fontSize: '0.85rem' }}>({d.rate}%)</span>
+                    </p>
+                </div>
+            );
+        }
+        return null;
+    };
+
     const CustomTooltip = ({ active, payload, label }) => {
         if (active && payload && payload.length) {
             return (
@@ -236,6 +254,55 @@ export default function Dashboard() {
                     </div>
                 </Card>
             </div>
+
+            {/* ─── Habit Completion Graph ─── */}
+            {habitTrendData.length > 0 && habitTrendData.some(d => d.total > 0) && (
+                <div className="featured-section animate-fade-in" style={{ animationDelay: '0.15s', marginTop: '1.5rem' }}>
+                    <Card className="featured-balance-card glass-card">
+                        <div className="featured-content">
+                            <span className="label text-xs uppercase tracking-wider text-gray-400">Habit Completion</span>
+                            <h2 className="amount text-5xl font-bold text-white my-2" style={{ fontSize: '2.5rem', background: 'linear-gradient(135deg, #a78bfa, #7c3aed)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                                {habitTrendData[habitTrendData.length - 1]?.rate ?? 0}% Today
+                            </h2>
+                            <div className="trend-tag" style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                padding: '6px 14px', borderRadius: '999px',
+                                background: 'rgba(167,139,250,0.12)',
+                                border: '1px solid rgba(167,139,250,0.3)',
+                                backdropFilter: 'blur(8px)'
+                            }}>
+                                <Flame size={16} style={{ color: '#a78bfa' }} />
+                                <span style={{ fontSize: '0.875rem', fontWeight: 500, color: '#a78bfa' }}>
+                                    {habitTrendData[habitTrendData.length - 1]?.completed ?? 0} / {habitTrendData[habitTrendData.length - 1]?.total ?? 0} habits done today
+                                </span>
+                            </div>
+                        </div>
+
+                        <div className="featured-chart-overlay mt-6" style={{ height: '220px', width: '100%' }}>
+                            <ResponsiveContainer width="100%" height="100%">
+                                <AreaChart data={habitTrendData} margin={{ top: 20, right: 10, left: 0, bottom: 10 }}>
+                                    <defs>
+                                        <linearGradient id="habitGradient" x1="0" y1="0" x2="0" y2="1">
+                                            <stop offset="5%" stopColor="#a78bfa" stopOpacity={0.4} />
+                                            <stop offset="95%" stopColor="#a78bfa" stopOpacity={0} />
+                                        </linearGradient>
+                                    </defs>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.1)" />
+                                    <XAxis dataKey="date" axisLine={false} tickLine={false}
+                                        tick={{ fill: '#9ca3af', fontSize: 11 }} dy={10} interval="preserveStartEnd" />
+                                    <YAxis axisLine={false} tickLine={false}
+                                        tick={{ fill: '#9ca3af', fontSize: 11 }}
+                                        tickFormatter={(v) => `${v}%`} dx={-10} width={40} domain={[0, 100]} />
+                                    <Tooltip cursor={{ stroke: 'rgba(255,255,255,0.2)', strokeDasharray: '3 3' }} content={<HabitTooltip />} />
+                                    <Area type="monotone" dataKey="rate" stroke="#a78bfa"
+                                        fill="url(#habitGradient)" strokeWidth={3}
+                                        activeDot={{ r: 6, fill: '#fff', stroke: '#a78bfa', strokeWidth: 2 }} />
+                                </AreaChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </Card>
+                </div>
+            )}
 
             {/* Module Cards Grid */}
             <div className="module-cards-grid animate-fade-in" style={{ animationDelay: '0.2s', marginTop: '2rem' }}>

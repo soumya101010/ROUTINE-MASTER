@@ -62,6 +62,47 @@ router.get('/stats', async (req, res) => {
     }
 });
 
+// GET daily completion trend for last 30 days (for Dashboard graph)
+router.get('/daily-trend', async (req, res) => {
+    try {
+        const habits = await Habit.find();
+        const total = habits.length;
+
+        const days = [];
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        for (let i = 29; i >= 0; i--) {
+            const day = new Date(today);
+            day.setDate(day.getDate() - i);
+            day.setHours(0, 0, 0, 0);
+            const dayTime = day.getTime();
+
+            let completed = 0;
+            habits.forEach(habit => {
+                const done = (habit.completedDates || []).some(d => {
+                    const cd = new Date(d);
+                    cd.setHours(0, 0, 0, 0);
+                    return cd.getTime() === dayTime;
+                });
+                if (done) completed++;
+            });
+
+            days.push({
+                date: day.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+                completed,
+                total,
+                rate: total > 0 ? Math.round((completed / total) * 100) : 0
+            });
+        }
+
+        res.json({ trend: days, total });
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // POST create habit
 router.post('/', async (req, res) => {
     try {

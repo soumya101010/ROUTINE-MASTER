@@ -109,6 +109,7 @@ export const focusAPI = {
 export const habitAPI = {
     getAll: () => api.get('/habits'),
     getStats: () => api.get('/habits/stats'),
+    getDailyTrend: () => api.get('/habits/daily-trend'),
     create: (data) => api.post('/habits', data),
     complete: (id) => api.patch(`/habits/${id}/complete`),
     delete: (id) => api.delete(`/habits/${id}`)

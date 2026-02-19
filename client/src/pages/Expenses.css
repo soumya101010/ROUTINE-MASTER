@@ -503,10 +503,13 @@
     .expenses-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: var(--spacing-sm);
+        align-items: stretch;
     }
 
     .expense-card {
         padding: var(--spacing-sm);
+        height: 100%;
+        box-sizing: border-box;
     }
 
     .expense-header h4 {
