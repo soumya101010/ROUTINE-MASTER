@@ -33,18 +33,27 @@ const renderVariableShape = (props) => {
 };
 
 /* ─── Clean Minimal Labels ─── */
-/* ─── Inside-arc % Labels (no connector lines that overflow) ─── */
 const renderMinimalLabel = (props) => {
-    const { cx, cy, midAngle, innerRadius, outerRadius, percent } = props;
-    if (percent < 0.04) return null; // hide very small slices
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.55;
-    const x = cx + radius * Math.cos(-RADIAN * midAngle);
-    const y = cy + radius * Math.sin(-RADIAN * midAngle);
+    const { cx, cy, midAngle, outerRadius, percent, fill } = props;
+    if (percent < 0.01) return null;
+    const sin = Math.sin(-RADIAN * midAngle);
+    const cos = Math.cos(-RADIAN * midAngle);
+    const sx = cx + (outerRadius + 6) * cos;
+    const sy = cy + (outerRadius + 6) * sin;
+    const mx = cx + (outerRadius + 22) * cos;
+    const my = cy + (outerRadius + 22) * sin;
+    const ex = mx + (cos >= 0 ? 1 : -1) * 14;
+    const ey = my;
+    const textAnchor = cos >= 0 ? 'start' : 'end';
     return (
-        <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central"
-            fontSize={11} fontWeight="700" style={{ pointerEvents: 'none', textShadow: '0 1px 3px rgba(0,0,0,0.7)' }}>
-            {`${(percent * 100).toFixed(0)}%`}
-        </text>
+        <g>
+            <path d={`M${sx},${sy}L${mx},${my}L${ex},${ey}`} stroke="rgba(255,255,255,0.2)" strokeWidth={1} fill="none" />
+            <circle cx={sx} cy={sy} r={2} fill={fill || 'rgba(255,255,255,0.4)'} />
+            <text x={ex + (cos >= 0 ? 1 : -1) * 6} y={ey} textAnchor={textAnchor}
+                fill="rgba(255,255,255,0.7)" fontSize={12} fontWeight="500" dominantBaseline="central">
+                {`${(percent * 100).toFixed(0)}%`}
+            </text>
+        </g>
     );
 };
 
