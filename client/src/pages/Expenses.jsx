@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { Search } from 'lucide-react';
 import { ChevronLeft, ChevronRight, Plus, Trash2, DollarSign, ArrowUpCircle, ArrowDownCircle } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Sector } from 'recharts';
 import GravityContainer from '../components/GravityContainer';
@@ -87,6 +88,7 @@ export default function Expenses() {
 
     const [transactions, setTransactions] = useState([]);
     const [showForm, setShowForm] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
     const [summary, setSummary] = useState({
         totalIncome: 0, totalExpense: 0, balance: 0,
         food: 0, transport: 0, shopping: 0, bills: 0, education: 0,
@@ -112,7 +114,7 @@ export default function Expenses() {
     const loadData = useCallback(async () => {
         try {
             // Always fetch transactions — even if monthly-stats fails
-            const transactionsRes = await expenseAPI.getAll(1, 50, currentMonth, currentYear);
+            const transactionsRes = await expenseAPI.getAll(1, 200, currentMonth, currentYear);
             const txList = transactionsRes.data.data || [];
             setTransactions(txList);
 
@@ -405,27 +407,59 @@ export default function Expenses() {
 
             {/* ─── Transactions List ─── */}
             <div className="expenses-list">
-                <h3>Transactions — {MONTH_NAMES[currentMonth - 1]} {currentYear}</h3>
+                <div className="expenses-list-header">
+                    <h3>Transactions — {MONTH_NAMES[currentMonth - 1]} {currentYear} <span className="tx-count">({transactions.length})</span></h3>
+                    <div className="search-bar">
+                        <Search size={16} className="search-icon" />
+                        <input
+                            type="text"
+                            placeholder="Search by name or amount..."
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            className="search-input"
+                        />
+                        {searchQuery && (
+                            <button className="search-clear" onClick={() => setSearchQuery('')}>✕</button>
+                        )}
+                    </div>
+                </div>
                 <GravityContainer className="expenses-grid">
-                    {transactions.slice(0, 10).map((transaction) => (
-                        <Card key={transaction._id} className={`expense-card ${transaction.type}`}>
-                            <div className="expense-header">
-                                <h4>{transaction.title}</h4>
-                                <button className="delete-btn" onClick={() => handleDelete(transaction._id)}>
-                                    <Trash2 size={18} />
-                                </button>
-                            </div>
-                            <div className="expense-amount" style={{ color: transaction.type === 'income' ? '#10b981' : '#ef4444' }}>
-                                {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
-                            </div>
-                            <div className="expense-meta">
-                                <span className={`category-badge ${transaction.category}`}>{transaction.category}</span>
-                                <span className="expense-date">{new Date(transaction.date).toLocaleDateString()}</span>
-                            </div>
-                            {transaction.description && <p className="expense-description">{transaction.description}</p>}
-                        </Card>
-                    ))}
+                    {transactions
+                        .filter(t => {
+                            if (!searchQuery.trim()) return true;
+                            const q = searchQuery.toLowerCase();
+                            return (
+                                t.title?.toLowerCase().includes(q) ||
+                                t.description?.toLowerCase().includes(q) ||
+                                t.amount?.toString().includes(q) ||
+                                t.category?.toLowerCase().includes(q)
+                            );
+                        })
+                        .map((transaction) => (
+                            <Card key={transaction._id} className={`expense-card ${transaction.type}`}>
+                                <div className="expense-header">
+                                    <h4>{transaction.title}</h4>
+                                    <button className="delete-btn" onClick={() => handleDelete(transaction._id)}>
+                                        <Trash2 size={18} />
+                                    </button>
+                                </div>
+                                <div className="expense-amount" style={{ color: transaction.type === 'income' ? '#10b981' : '#ef4444' }}>
+                                    {transaction.type === 'income' ? '+' : '-'}₹{transaction.amount.toFixed(2)}
+                                </div>
+                                <div className="expense-meta">
+                                    <span className={`category-badge ${transaction.category}`}>{transaction.category}</span>
+                                    <span className="expense-date">{new Date(transaction.date).toLocaleDateString()}</span>
+                                </div>
+                                {transaction.description && <p className="expense-description">{transaction.description}</p>}
+                            </Card>
+                        ))}
                 </GravityContainer>
+                {searchQuery && transactions.filter(t => {
+                    const q = searchQuery.toLowerCase();
+                    return t.title?.toLowerCase().includes(q) || t.description?.toLowerCase().includes(q) || t.amount?.toString().includes(q) || t.category?.toLowerCase().includes(q);
+                }).length === 0 && (
+                        <p className="no-results">No transactions match &quot;{searchQuery}&quot;</p>
+                    )}
             </div>
 
             {transactions.length === 0 && !showForm && (
