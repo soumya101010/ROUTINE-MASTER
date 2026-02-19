@@ -111,15 +111,29 @@ export default function Expenses() {
     /* ─── Load data whenever month/year changes ─── */
     const loadData = useCallback(async () => {
         try {
-            const [transactionsRes, statsRes] = await Promise.all([
-                expenseAPI.getAll(1, 50, currentMonth, currentYear),
-                expenseAPI.getMonthlyStats(currentYear, currentMonth)
-            ]);
+            // Always fetch transactions — even if monthly-stats fails
+            const transactionsRes = await expenseAPI.getAll(1, 50, currentMonth, currentYear);
+            const txList = transactionsRes.data.data || [];
+            setTransactions(txList);
 
-            setTransactions(transactionsRes.data.data);
-
-            const totals = statsRes.data.totals;
-            const categories = statsRes.data.categories;
+            // Try the dedicated stats endpoint; fall back to computing from transactions
+            let totals = null;
+            let categories = [];
+            try {
+                const statsRes = await expenseAPI.getMonthlyStats(currentYear, currentMonth);
+                totals = statsRes.data.totals;
+                categories = statsRes.data.categories || [];
+            } catch {
+                // Backend not deployed yet or endpoint missing → compute locally
+                totals = { totalIncome: 0, totalExpense: 0 };
+                txList.forEach(t => {
+                    if (t.type === 'income') totals.totalIncome += t.amount;
+                    else totals.totalExpense += t.amount;
+                });
+                const catMap = {};
+                txList.forEach(t => { catMap[t.category] = (catMap[t.category] || 0) + t.amount; });
+                categories = Object.entries(catMap).map(([_id, total]) => ({ _id, total }));
+            }
 
             const newSummary = {
                 totalIncome: totals.totalIncome || 0,
@@ -129,13 +143,11 @@ export default function Expenses() {
                 health: 0, entertainment: 0, hobby: 0, necessary: 0,
                 salary: 0, freelance: 0, investments: 0, gifts: 0, other: 0
             };
-
             categories.forEach(cat => {
                 if (Object.prototype.hasOwnProperty.call(newSummary, cat._id)) {
                     newSummary[cat._id] = cat.total;
                 }
             });
-
             setSummary(newSummary);
         } catch (error) {
             console.error('Error loading data:', error);
