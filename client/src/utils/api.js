@@ -58,8 +58,13 @@ export const studyAPI = {
 
 // Expenses
 export const expenseAPI = {
-    getAll: (page = 1, limit = 20) => api.get(`/expenses?page=${page}&limit=${limit}`),
+    getAll: (page = 1, limit = 20, month = null, year = null) => {
+        let url = `/expenses?page=${page}&limit=${limit}`;
+        if (month && year) url += `&month=${month}&year=${year}`;
+        return api.get(url);
+    },
     getDashboardStats: () => api.get('/expenses/dashboard-stats'),
+    getMonthlyStats: (year, month) => api.get(`/expenses/monthly-stats?year=${year}&month=${month}`),
     getSummary: (year, month) => api.get(`/expenses/summary/${year}/${month}`),
     create: (data) => api.post('/expenses', data),
     update: (id, data) => api.patch(`/expenses/${id}`, data),

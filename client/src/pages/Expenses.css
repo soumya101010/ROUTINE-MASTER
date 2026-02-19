@@ -4,17 +4,69 @@
     margin: 0 auto;
 }
 
-.page-header {
+.expenses-page .page-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: var(--spacing-xl);
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    width: 100%;
 }
 
-.page-header h1 {
+.expenses-page .page-header h1 {
     margin-bottom: 0;
-    /* Remove default margin from module-title if necessary */
     line-height: 1;
+}
+
+/* ─── Month Navigator ─── */
+.month-navigator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+    padding: var(--spacing-sm) var(--spacing-xl);
+    background: var(--glass-bg);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(233, 30, 99, 0.25);
+    border-radius: var(--radius-lg);
+    box-shadow: 0 4px 24px rgba(233, 30, 99, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.month-label {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    letter-spacing: 0.5px;
+    min-width: 160px;
+    text-align: center;
+    background: var(--gradient-primary);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.month-nav-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(233, 30, 99, 0.12);
+    border: 1px solid rgba(233, 30, 99, 0.35);
+    border-radius: 50%;
+    color: var(--color-accent-primary);
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+    transition: all var(--transition-base);
+    flex-shrink: 0;
+}
+
+.month-nav-btn:hover {
+    background: rgba(233, 30, 99, 0.28);
+    border-color: var(--color-accent-primary);
+    box-shadow: 0 0 12px rgba(233, 30, 99, 0.4);
+    transform: scale(1.08);
 }
 
 .expense-form {
@@ -242,6 +294,62 @@
     color: #f472b6;
 }
 
+.category-badge.food {
+    background: rgba(239, 68, 68, 0.18);
+    color: #f87171;
+}
+
+.category-badge.transport {
+    background: rgba(59, 130, 246, 0.18);
+    color: #60a5fa;
+}
+
+.category-badge.shopping {
+    background: rgba(168, 85, 247, 0.18);
+    color: #c084fc;
+}
+
+.category-badge.bills {
+    background: rgba(234, 179, 8, 0.18);
+    color: #facc15;
+}
+
+.category-badge.education {
+    background: rgba(14, 165, 233, 0.18);
+    color: #38bdf8;
+}
+
+.category-badge.health {
+    background: rgba(16, 185, 129, 0.18);
+    color: #34d399;
+}
+
+.category-badge.entertainment {
+    background: rgba(251, 113, 133, 0.18);
+    color: #fb7185;
+}
+
+.category-badge.investments {
+    background: rgba(52, 211, 153, 0.18);
+    color: #34d399;
+}
+
+.category-badge.gifts {
+    background: rgba(250, 204, 21, 0.18);
+    color: #fbbf24;
+}
+
+.expenses-list {
+    margin-top: var(--spacing-md);
+}
+
+.expenses-list h3 {
+    margin-bottom: var(--spacing-lg);
+    font-size: 1rem;
+    color: var(--color-text-muted);
+    font-weight: 500;
+}
+
 .charts-row {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -283,20 +391,32 @@
         grid-template-columns: 1fr;
     }
 
-    .page-header {
+    .expenses-page .page-header {
         flex-direction: column;
-        align-items: stretch;
+        align-items: flex-start;
         gap: var(--spacing-md);
         margin-bottom: var(--spacing-lg);
     }
 
-    .page-header h1 {
+    .expenses-page .page-header h1 {
         margin-bottom: var(--spacing-sm);
-        text-align: center;
+        text-align: left;
     }
 
-    .page-header .btn {
-        width: 100%;
+    .expenses-page .page-header .btn {
+        width: auto;
+        padding-left: var(--spacing-xl);
+        padding-right: var(--spacing-xl);
+    }
+
+    .month-navigator {
+        padding: var(--spacing-xs) var(--spacing-md);
+        gap: var(--spacing-md);
+    }
+
+    .month-label {
+        min-width: 140px;
+        font-size: 0.95rem;
     }
 
     .expenses-grid {

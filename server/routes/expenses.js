@@ -104,25 +104,73 @@ router.get('/dashboard-stats', async (req, res) => {
     }
 });
 
-// Get all expenses (Paginated)
+// Get all expenses — filtered by month/year if provided
 router.get('/', async (req, res) => {
     try {
         const page = parseInt(req.query.page) || 1;
         const limit = parseInt(req.query.limit) || 20;
         const skip = (page - 1) * limit;
 
-        const expenses = await Expense.find()
+        let query = {};
+        if (req.query.month && req.query.year) {
+            const year = parseInt(req.query.year);
+            const month = parseInt(req.query.month); // 1-indexed
+            const startDate = new Date(year, month - 1, 1);
+            const endDate = new Date(year, month, 0, 23, 59, 59);
+            query.date = { $gte: startDate, $lte: endDate };
+        }
+
+        const expenses = await Expense.find(query)
             .sort({ date: -1 })
             .skip(skip)
             .limit(limit);
 
-        const total = await Expense.countDocuments();
+        const total = await Expense.countDocuments(query);
 
         res.json({
             data: expenses,
             currentPage: page,
             totalPages: Math.ceil(total / limit),
             totalItems: total
+        });
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
+// Get monthly totals + category breakdown for a specific month
+router.get('/monthly-stats', async (req, res) => {
+    try {
+        const year = parseInt(req.query.year) || new Date().getFullYear();
+        const month = parseInt(req.query.month) || (new Date().getMonth() + 1);
+
+        const startDate = new Date(year, month - 1, 1);
+        const endDate = new Date(year, month, 0, 23, 59, 59);
+
+        const stats = await Expense.aggregate([
+            { $match: { date: { $gte: startDate, $lte: endDate } } },
+            {
+                $facet: {
+                    totals: [
+                        {
+                            $group: {
+                                _id: null,
+                                totalIncome: { $sum: { $cond: [{ $eq: ['$type', 'income'] }, '$amount', 0] } },
+                                totalExpense: { $sum: { $cond: [{ $eq: ['$type', 'expense'] }, '$amount', 0] } }
+                            }
+                        }
+                    ],
+                    categories: [
+                        { $group: { _id: '$category', total: { $sum: '$amount' } } }
+                    ]
+                }
+            }
+        ]);
+
+        const result = stats[0];
+        res.json({
+            totals: result.totals[0] || { totalIncome: 0, totalExpense: 0 },
+            categories: result.categories || []
         });
     } catch (error) {
         res.status(500).json({ message: error.message });
