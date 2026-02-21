@@ -127,7 +127,8 @@ export const weeklyReviewAPI = {
 export const intelligenceAPI = {
     getDashboard: () => api.get('/intelligence/dashboard'),
     getCore: () => api.get('/intelligence/core'),
-    generateAI: (metrics) => api.post('/intelligence/generate-ai', { metrics })
+    generateAI: (metrics) => api.post('/intelligence/generate-ai', { metrics }),
+    chat: (message, metrics) => api.post('/intelligence/chat', { message, metrics })
 };
 
 export default api;

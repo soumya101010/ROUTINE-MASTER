@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import { Brain, ArrowLeft, Target, Timer, Flame, Clock, BookOpen, FileText, DollarSign, CheckSquare, TriangleAlert, Bell, CalendarIcon, Loader2, Sparkles, Search, ChevronRight } from 'lucide-react';
+import { Brain, ArrowLeft, Target, Timer, Flame, Clock, BookOpen, FileText, DollarSign, CheckSquare, TriangleAlert, Bell, CalendarIcon, Loader2, Sparkles, Search, ChevronRight, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { intelligenceAPI } from '../utils/api';
 import './RoutineIntelligenceCore.css';
@@ -12,76 +12,145 @@ const ModuleIcons = {
     'Habits': { icon: Flame, color: '#ec4899', route: '/habits' },
     'Attendance': { icon: CheckSquare, color: '#10b981', route: '/attendance' },
     'Routines': { icon: CalendarIcon, color: '#f59e0b', route: '/routines' },
-    'Study': { icon: BookOpen, color: '#f97316', route: '/study' },
-    'Documents': { icon: FileText, color: '#06b6d4', route: '/documents' },
-    'Expenses': { icon: DollarSign, color: '#ef4444', route: '/expenses' }
+    'Study': { icon: BookOpen, color: '#f97316', route: '/study' }
 };
 
-const AISummary = ({ currentMetrics, initialLayer }) => {
-    const [aiDoc, setAiDoc] = useState(null);
-    const [loadingAI, setLoadingAI] = useState(false);
+// Extracted AI components mapper for recommendations
+const IconDictionary = {
+    Brain, Target, Timer, Flame, Clock, BookOpen, CheckSquare, Sparkles
+};
+
+// AISummary is now a pure presentational component that receives dynamicAI
+const AISummary = ({ currentMetrics, initialLayer, dynamicAI, loadingAI }) => {
     const [showInsights, setShowInsights] = useState(false);
+    const [chatMessages, setChatMessages] = useState([]);
+    const [userMessage, setUserMessage] = useState('');
+    const [isThinking, setIsThinking] = useState(false);
+    const chatEndRef = useRef(null);
+
+    const synthesisText = dynamicAI ? dynamicAI.AISynthesis : initialLayer.humanReadableSummary;
+    const causalText = dynamicAI ? dynamicAI.CausalChain : (initialLayer.causeEffectChains && initialLayer.causeEffectChains[0]);
+
+    const scrollToBottom = () => {
+        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
 
     useEffect(() => {
-        const fetchAI = async () => {
-            if (!currentMetrics) return;
-            setLoadingAI(true);
-            try {
-                const res = await intelligenceAPI.generateAI(currentMetrics);
-                setAiDoc(res.data);
-            } catch (err) {
-                console.error("Failed to generate AI:", err);
-            } finally {
-                setLoadingAI(false);
-            }
-        };
-        fetchAI();
-    }, [currentMetrics]);
+        if (showInsights) scrollToBottom();
+    }, [chatMessages, showInsights]);
 
-    const synthesisText = aiDoc ? aiDoc.AISynthesis : initialLayer.humanReadableSummary;
-    const causalText = aiDoc ? aiDoc.CausalChain : (initialLayer.causeEffectChains && initialLayer.causeEffectChains[0]);
+    const handleSendMessage = async (e) => {
+        e.preventDefault();
+        if (!userMessage.trim() || isThinking) return;
+
+        const newMessage = { role: 'user', text: userMessage };
+        setChatMessages(prev => [...prev, newMessage]);
+        setUserMessage('');
+        setIsThinking(true);
+
+        try {
+            const res = await intelligenceAPI.chat(userMessage, currentMetrics);
+            setChatMessages(prev => [...prev, { role: 'ai', text: res.data.reply }]);
+        } catch (error) {
+            setChatMessages(prev => [...prev, { role: 'ai', text: "I'm having a little brain fog right now, friend. Could you try asking again?" }]);
+        } finally {
+            setIsThinking(false);
+        }
+    };
 
     return (
-        <div className="ai-summary-content">
+        <div className="ai-summary-content friendly-mentor">
+            <div className="mentor-vibe-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
+                <div className="source-tag" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', padding: '2px 8px', borderRadius: '4px', background: dynamicAI ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)', color: dynamicAI ? '#a855f7' : '#3b82f6', fontWeight: 700 }}>
+                    {dynamicAI ? "Live Gemini AI" : "Local Engine"}
+                </div>
+            </div>
+
             {currentMetrics.consistency > 75 ? (
-                <div className="summary-item positive"><span className="dot bg-blue-500"></span> Strong Habits Maintained</div>
+                <div className="summary-item positive"><span className="dot bg-blue-500"></span> Your habits are looking super strong!</div>
             ) : (
-                <div className="summary-item warning"><TriangleAlert size={16} /> Inconsistent Habits</div>
+                <div className="summary-item warning"><TriangleAlert size={16} /> Habits are slightly slipping, friend.</div>
             )}
             {currentMetrics.studyLoad > 80 ? (
-                <div className="summary-item warning"><TriangleAlert size={16} /> Approaching Study Overload</div>
+                <div className="summary-item warning"><TriangleAlert size={16} /> Careful, you're loading up a bit much.</div>
             ) : (
-                <div className="summary-item positive"><span className="dot bg-green-500"></span> Study Load Stable</div>
-            )}
-            {currentMetrics.financial < 60 ? (
-                <div className="summary-item highlight"><FileText size={16} /> Expense Drift Detected</div>
-            ) : (
-                <div className="summary-item positive"><span className="dot bg-green-500"></span> Finances Stable</div>
+                <div className="summary-item positive"><span className="dot bg-green-500"></span> Your workload is in the sweet spot.</div>
             )}
 
             <div className="brain-graphic-small">
-                <Brain size={80} className="text-blue-400" style={{ filter: 'drop-shadow(0 0 15px rgba(96, 165, 250, 0.5))' }} />
+                <Brain size={80} className="text-blue-400 mentor-brain-icon" style={{ filter: 'drop-shadow(0 0 15px rgba(96, 165, 250, 0.5))' }} />
             </div>
 
             {showInsights && (
-                <div className="insights-expansion animate-fade-in" style={{ marginTop: '1rem', marginBottom: '1rem', padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '12px', fontSize: '0.85rem', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
-                    {loadingAI ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a855f7' }}>
-                            <Loader2 className="animate-spin" size={16} /> Generating AI Synthesis...
-                        </div>
-                    ) : (
-                        <>
-                            <div style={{ color: '#f1f5f9', marginBottom: '0.5rem', fontWeight: 600 }}>AI Synthesis</div>
-                            <p style={{ color: '#cbd5e1', marginBottom: '0.75rem', lineHeight: 1.5 }}>{synthesisText}</p>
-                            <div style={{ color: '#f1f5f9', marginBottom: '0.25rem', fontWeight: 600 }}>Causal Chain Detected</div>
-                            <p style={{ color: '#fca5a5', lineHeight: 1.5 }}>{causalText}</p>
-                        </>
-                    )}
+                <div className="insights-expansion animate-fade-in chat-bubble" style={{ maxHeight: '400px', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '5px', marginBottom: '10px' }} className="custom-scrollbar">
+                        {loadingAI ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#a855f7', padding: '10px' }}>
+                                <Loader2 className="animate-spin" size={18} /> Just thinking for a second...
+                            </div>
+                        ) : (
+                            <div className="mentor-narrative">
+                                <div className="narrative-section">
+                                    <label>Master Synthesis</label>
+                                    <p>{synthesisText}</p>
+                                </div>
+                                <div className="narrative-section" style={{ borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '10px', marginBottom: '1rem' }}>
+                                    <label style={{ color: '#fca5a5' }}>Quick Logic Check</label>
+                                    <p style={{ color: '#fca5a5' }}>{causalText}</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {chatMessages.map((msg, idx) => (
+                            <div key={idx} className={`chat-msg ${msg.role}`} style={{
+                                alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                                background: msg.role === 'user' ? 'rgba(59, 130, 246, 0.15)' : 'rgba(168, 85, 247, 0.1)',
+                                border: msg.role === 'user' ? '1px solid rgba(59, 130, 246, 0.2)' : '1px solid rgba(168, 85, 247, 0.2)',
+                                borderRadius: '12px',
+                                padding: '10px 14px',
+                                marginBottom: '10px',
+                                fontSize: '0.85rem',
+                                color: msg.role === 'user' ? '#fff' : '#e2e8f0',
+                                maxWidth: '90%',
+                                marginLeft: msg.role === 'user' ? 'auto' : '0'
+                            }}>
+                                {msg.text}
+                            </div>
+                        ))}
+                        {isThinking && (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a855f7', fontSize: '0.85rem', padding: '5px' }}>
+                                <Loader2 className="animate-spin" size={14} /> Consultant is typing...
+                            </div>
+                        )}
+                        <div ref={chatEndRef} />
+                    </div>
+
+                    <form onSubmit={handleSendMessage} style={{ position: 'relative', marginTop: 'auto' }}>
+                        <input
+                            type="text"
+                            placeholder="Ask me anything..."
+                            value={userMessage}
+                            onChange={(e) => setUserMessage(e.target.value)}
+                            style={{
+                                width: '100%',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px solid rgba(255,255,255,0.1)',
+                                borderRadius: '12px',
+                                padding: '10px 40px 10px 12px',
+                                color: '#fff',
+                                outline: 'none',
+                                fontSize: '0.85rem'
+                            }}
+                        />
+                        <button type="submit" disabled={isThinking} style={{ position: 'absolute', right: '8px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', color: '#a855f7', cursor: 'pointer', padding: '5px' }}>
+                            <Send size={18} />
+                        </button>
+                    </form>
                 </div>
             )}
 
-            <button className="insights-btn" onClick={() => setShowInsights(!showInsights)}>
-                {showInsights ? 'Close Insights' : 'Deep Insights >'}
+            <button className="insights-btn friendly-btn" onClick={() => setShowInsights(!showInsights)} style={{ marginTop: '1rem' }}>
+                {showInsights ? 'Close Consultant' : 'Consult with AI >'}
             </button>
         </div>
     );
@@ -90,18 +159,41 @@ const AISummary = ({ currentMetrics, initialLayer }) => {
 export default function RoutineIntelligenceCore() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [showInsights, setShowInsights] = useState(false);
     const [timeframe, setTimeframe] = useState('This Week');
     const [expandedRec, setExpandedRec] = useState(null);
     const [isSearching, setIsSearching] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+
+    // Manage dynamic LLM data globally for the dashboard
+    const [dynamicAI, setDynamicAI] = useState(null);
+    const [loadingAI, setLoadingAI] = useState(false);
+    const [narrativeTab, setNarrativeTab] = useState('weekly');
+
     const navigate = useNavigate();
 
     useEffect(() => {
         const loadCoreData = async () => {
             try {
+                // 1. Fetch the static dashboard baseline numbers first
                 const res = await intelligenceAPI.getCore();
                 setData(res.data);
+
+                // 2. Fetch the dynamic LLM content immediately after
+                setLoadingAI(true);
+                const aiMetrics = { ...res.data.metrics };
+                delete aiMetrics.financial;
+
+                intelligenceAPI.generateAI(aiMetrics)
+                    .then(aiRes => {
+                        setDynamicAI(aiRes.data);
+                    })
+                    .catch(err => {
+                        console.error("Failed to generate AI:", err);
+                    })
+                    .finally(() => {
+                        setLoadingAI(false);
+                    });
+
             } catch (error) {
                 console.error("Error loading intelligence core:", error);
             } finally {
@@ -128,6 +220,11 @@ export default function RoutineIntelligenceCore() {
     const consistencyData = [{ v: 40 }, { v: 60 }, { v: data.metrics.consistency }];
     const focusData = [{ v: 50 }, { v: 70 }, { v: data.metrics.focus }];
 
+    // Determine which recommendations to use: Real LLM data vs rule-based fallback
+    const activeRecommendations = dynamicAI && dynamicAI.Recommendations && dynamicAI.Recommendations.length > 0
+        ? dynamicAI.Recommendations
+        : data.aiLayer.recommendations;
+
     return (
         <div className="ric-core-page animate-fade-in">
 
@@ -152,7 +249,6 @@ export default function RoutineIntelligenceCore() {
                                 style={{ background: 'transparent', border: 'none', color: '#fff', outline: 'none', marginLeft: '8px', fontSize: '0.9rem', width: '130px', padding: 0 }}
                                 onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                        // mock search execute
                                         setIsSearching(false);
                                         setSearchQuery('');
                                     }
@@ -173,31 +269,39 @@ export default function RoutineIntelligenceCore() {
                 <div className="left-column">
 
                     {/* Master Health Widget */}
-                    <div className="ric-panel health-panel">
-                        <div className="panel-title text-center" style={{ marginBottom: 0 }}>Health Score</div>
+                    <div className="ric-panel health-panel cinematic-neon">
+                        <div className="health-header" style={{ textAlign: 'center', marginBottom: '1.5rem' }}>
+                            <div className="dynamic-branding-tag" style={{ background: 'rgba(236, 72, 153, 0.15)', color: '#ec4899', padding: '4px 12px', borderRadius: '30px', fontSize: '0.75rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '2px', display: 'inline-block', marginBottom: '0.5rem', border: '1px solid rgba(236, 72, 153, 0.3)' }}>
+                                {dynamicAI ? dynamicAI.PriorityLabel : "SYSTEM SCAN"}
+                            </div>
+                            <h2 style={{ fontSize: '1.75rem', fontWeight: 900, color: '#fff', textShadow: '0 0 15px rgba(255,255,255,0.3)', marginBottom: '0.25rem' }}>
+                                {dynamicAI ? dynamicAI.DynamicTitle : "Steady Engine"}
+                            </h2>
+                            <p style={{ fontSize: '0.85rem', color: '#94a3b8' }}>Routine Vital Correlation</p>
+                        </div>
+
                         <div className="health-dial-container">
-                            <div className="health-dial-glow"></div>
+                            <div className="health-dial-glow" style={{ background: data.globalScore > 70 ? 'radial-gradient(circle, rgba(16, 185, 129, 0.2) 0%, transparent 70%)' : 'radial-gradient(circle, rgba(236, 72, 153, 0.2) 0%, transparent 70%)' }}></div>
                             <div className="health-dial">
                                 <svg viewBox="0 0 100 100">
                                     <defs>
                                         <linearGradient id="score-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                            <stop offset="0%" stopColor="#ec4899" />
+                                            <stop offset="0%" stopColor={data.globalScore > 70 ? "#10b981" : "#ec4899"} />
                                             <stop offset="50%" stopColor="#8b5cf6" />
-                                            <stop offset="100%" stopColor="#3b82f6" />
+                                            <stop offset="100%" stopColor={data.globalScore > 70 ? "#3b82f6" : "#f59e0b"} />
                                         </linearGradient>
                                     </defs>
-                                    <circle className="dial-bg" cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.05)" strokeWidth="6" fill="none" />
+                                    <circle className="dial-bg" cx="50" cy="50" r="45" stroke="rgba(255,255,255,0.05)" strokeWidth="4" fill="none" />
                                     <circle className="dial-fg" cx="50" cy="50" r="45" stroke="url(#score-grad)" strokeWidth="6" fill="none" strokeDasharray="283" strokeDashoffset={`${283 - (data.globalScore / 100) * 283}`} strokeLinecap="round" transform="rotate(-90 50 50)" />
                                 </svg>
                                 <div className="dial-content">
-                                    <Brain size={48} className="brain-core-icon" />
                                     <div className="score-num">{data.globalScore}</div>
-                                    <div className="score-max">/100</div>
+                                    <div className="score-label" style={{ fontSize: '0.75rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>Health%</div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Flanking Metrics underneath the dial to match the image */}
+                        {/* Flanking Metrics */}
                         <div className="health-flanks">
                             <div className="flank">
                                 <span className="title">Consistency</span>
@@ -264,7 +368,7 @@ export default function RoutineIntelligenceCore() {
                             </div>
                             <div className="chart-container" style={{ height: '220px' }}>
                                 <ResponsiveContainer width="100%" height="100%">
-                                    <AreaChart data={data.charts.performanceData} margin={{ top: 10, right: 10, left: -10, bottom: 0 }}>
+                                    <AreaChart data={data.charts.performanceData} margin={{ top: 10, right: 10, left: 0, bottom: 0 }}>
                                         <defs>
                                             <linearGradient id="gFocus" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#8b5cf6" stopOpacity={0.4} /><stop offset="95%" stopColor="#8b5cf6" stopOpacity={0} /></linearGradient>
                                             <linearGradient id="gLoad" x1="0" y1="0" x2="0" y2="1"><stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4} /><stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} /></linearGradient>
@@ -272,7 +376,7 @@ export default function RoutineIntelligenceCore() {
                                         </defs>
                                         <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
                                         <XAxis dataKey="date" axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} />
-                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} dx={-5} width={35} />
+                                        <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 11 }} width={45} />
 
                                         <Tooltip
                                             contentStyle={{ backgroundColor: 'rgba(10, 5, 20, 0.9)', border: '1px solid rgba(139, 92, 246, 0.3)', borderRadius: '12px', color: '#f8fafc' }}
@@ -295,6 +399,10 @@ export default function RoutineIntelligenceCore() {
                                 <div style={{ width: '100%', height: '160px' }}>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
+                                            <Tooltip
+                                                contentStyle={{ backgroundColor: 'rgba(10, 5, 20, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '12px', color: '#f8fafc' }}
+                                                itemStyle={{ color: '#fff', fontSize: '0.85rem' }}
+                                            />
                                             <Pie data={data.charts.performanceDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value" stroke="none">
                                                 {data.charts.performanceDistribution.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={entry.fill} />
@@ -321,62 +429,138 @@ export default function RoutineIntelligenceCore() {
                 {/* RIGHT COLUMN - Sidebar */}
                 <div className="right-column">
 
+                    {/* AI Periodic Narrative */}
+                    <div className="ric-panel narrative-panel glass-panel">
+                        <div className="panel-header" style={{ marginBottom: '1rem' }}>
+                            <div className="panel-title" style={{ marginBottom: 0, fontSize: '1rem' }}>The Periodic Recap</div>
+                        </div>
+                        <div className="narrative-content">
+                            <div className="narrative-tab-container" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '1.25rem' }}>
+                                <div
+                                    className={`narrative-tab ${narrativeTab === 'weekly' ? 'active' : ''}`}
+                                    onClick={() => setNarrativeTab('weekly')}
+                                    style={{
+                                        padding: '8px',
+                                        textAlign: 'center',
+                                        borderRadius: '8px',
+                                        background: narrativeTab === 'weekly' ? 'rgba(59, 130, 246, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                                        border: narrativeTab === 'weekly' ? '1px solid rgba(59, 130, 246, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        color: narrativeTab === 'weekly' ? '#60a5fa' : '#94a3b8',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Weekly Recap
+                                </div>
+                                <div
+                                    className={`narrative-tab ${narrativeTab === 'monthly' ? 'active' : ''}`}
+                                    onClick={() => setNarrativeTab('monthly')}
+                                    style={{
+                                        padding: '8px',
+                                        textAlign: 'center',
+                                        borderRadius: '8px',
+                                        background: narrativeTab === 'monthly' ? 'rgba(168, 85, 247, 0.1)' : 'rgba(255, 255, 255, 0.03)',
+                                        border: narrativeTab === 'monthly' ? '1px solid rgba(168, 85, 247, 0.3)' : '1px solid rgba(255, 255, 255, 0.05)',
+                                        fontSize: '0.8rem',
+                                        fontWeight: 600,
+                                        color: narrativeTab === 'monthly' ? '#a855f7' : '#94a3b8',
+                                        cursor: 'pointer'
+                                    }}
+                                >
+                                    Monthly Outlook
+                                </div>
+                            </div>
+                            <div className="narrative-text animate-fade-in" style={{ padding: '15px', borderRadius: '12px', background: 'rgba(0,0,0,0.2)', border: '1px solid rgba(255,255,255,0.05)', lineHeight: 1.6, fontSize: '0.9rem', color: '#cbd5e1', minHeight: '80px' }}>
+                                {loadingAI ? (
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#a855f7' }}>
+                                        <Loader2 className="animate-spin" size={16} /> Reading your patterns...
+                                    </div>
+                                ) : (
+                                    dynamicAI ? (narrativeTab === 'weekly' ? dynamicAI.WeeklySummary : dynamicAI.MonthlyOutlook) : "You've been sticking to the plan well! Keep that momentum high."
+                                )}
+                            </div>
+                        </div>
+                    </div>
+
                     {/* AI Summary Sidebar */}
                     <div className="ric-panel ai-summary-panel">
                         <div className="panel-title">AI Summary</div>
-                        <AISummary currentMetrics={data.metrics} initialLayer={data.aiLayer} />
+                        <AISummary currentMetrics={data.metrics} initialLayer={data.aiLayer} dynamicAI={dynamicAI} loadingAI={loadingAI} />
                     </div>
 
                     {/* AI Recommendations */}
                     <div className="ric-panel ai-recs-panel">
-                        <div className="panel-title">AI Recommendations</div>
+                        <div className="panel-title" style={{ display: 'flex', alignItems: 'center' }}>
+                            AI Recommendations
+                            {loadingAI && <Loader2 className="animate-spin" size={16} style={{ marginLeft: '10px', color: '#a855f7' }} />}
+                        </div>
                         <div className="recs-list">
-                            {data.aiLayer.recommendations.map((rec, i) => (
-                                <div key={i} className="rec-item" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setExpandedRec(expandedRec === i ? null : i)}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', width: '100%' }}>
-                                        <div className="rec-icon"><Sparkles size={20} className="text-purple-400" /></div>
-                                        <div className="rec-info">
-                                            <div className="title">{rec.title}</div>
-                                            <div className="impact-bar-container">
-                                                <div className="impact-text">Expected Impact +{rec.impact}%</div>
-                                                <div className="impact-bar">
-                                                    <div className="fill" style={{ width: `${rec.impact * 4}%`, background: i === 0 ? '#10b981' : (i === 1 ? '#8b5cf6' : '#f59e0b') }}></div>
+                            {activeRecommendations.map((rec, i) => {
+                                const RecIcon = IconDictionary[rec.icon] || Sparkles;
+
+                                return (
+                                    <div key={i} className="rec-item" style={{ flexDirection: 'column', alignItems: 'stretch', cursor: 'pointer', transition: 'all 0.2s' }} onClick={() => setExpandedRec(expandedRec === i ? null : i)}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '1.25rem', width: '100%' }}>
+                                            <div className="rec-icon"><RecIcon size={20} className="text-purple-400" /></div>
+                                            <div className="rec-info">
+                                                <div className="title">{rec.title}</div>
+                                                <div className="impact-bar-container">
+                                                    <div className="impact-text">Expected Impact +{rec.impact}%</div>
+                                                    <div className="impact-bar">
+                                                        <div className="fill" style={{ width: `${Math.min(rec.impact * 4, 100)}%`, background: i === 0 ? '#10b981' : (i === 1 ? '#8b5cf6' : '#f59e0b') }}></div>
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div className="rec-arrow"><ChevronRight size={20} style={{ transform: expandedRec === i ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} /></div>
                                         </div>
-                                        <div className="rec-arrow"><ChevronRight size={20} style={{ transform: expandedRec === i ? 'rotate(90deg)' : 'none', transition: 'transform 0.2s' }} /></div>
-                                    </div>
 
-                                    {expandedRec === i && (
-                                        <div className="animate-fade-in" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', color: '#94a3b8' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
-                                                <span>Risk Level:</span>
-                                                <span style={{ fontWeight: 600, color: rec.risk === 'Low' ? '#10b981' : (rec.risk === 'Medium' ? '#f59e0b' : '#ef4444') }}>{rec.risk}</span>
+                                        {expandedRec === i && (
+                                            <div className="animate-fade-in" style={{ marginTop: '1rem', paddingTop: '1rem', borderTop: '1px solid rgba(255,255,255,0.05)', fontSize: '0.85rem', color: '#94a3b8' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.25rem' }}>
+                                                    <span>Source:</span>
+                                                    <span style={{ fontWeight: 600, color: (rec.source === 'Gemini AI' ? '#a855f7' : '#3b82f6') }}>{rec.source || "Static Model"}</span>
+                                                </div>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem' }}>
+                                                    <span>Risk Level:</span>
+                                                    <span style={{ fontWeight: 600, color: rec.risk === 'Low' ? '#10b981' : (rec.risk === 'Medium' ? '#f59e0b' : '#ef4444') }}>{rec.risk}</span>
+                                                </div>
+                                                <p style={{ lineHeight: 1.5 }}>{rec.action || "Action: Execute this adjustment carefully over the next 48 hours to secure the projected impact."}</p>
                                             </div>
-                                            <p style={{ lineHeight: 1.5 }}>Action: Execute this adjustment carefully over the next 48 hours to secure the projected impact on your Global Health Score.</p>
-                                        </div>
-                                    )}
-                                </div>
-                            ))}
+                                        )}
+                                    </div>
+                                )
+                            })}
                         </div>
                     </div>
 
                     {/* Predictions */}
-                    <div className="ric-panel predictions-panel">
-                        <div className="panel-title">Predictions (7 Days)</div>
+                    <div className="ric-panel predictions-panel cinematic-panel">
+                        <div className="panel-title">Master Projections</div>
                         <div className="pred-stats">
-                            <div className="p-stat warning">
-                                <span className="label">Risk Day</span>
-                                <span className="val"><TriangleAlert size={16} />{data.predictions.nextRiskDay}</span>
-                            </div>
-                            <div className="p-stat alert">
-                                <span className="label">Burnout</span>
-                                <span className="val"><Flame size={16} />{data.predictions.burnoutProbability}%</span>
-                            </div>
-                            <div className="p-stat safe">
-                                <span className="label">Finance Risk</span>
-                                <span className="val"><CheckSquare size={16} />{data.predictions.financialRisk}</span>
-                            </div>
+                            {dynamicAI && dynamicAI.AIPredictions && dynamicAI.AIPredictions.length > 0 ? (
+                                dynamicAI.AIPredictions.map((pred, idx) => (
+                                    <div key={idx} className={`p-stat ${pred.type.toLowerCase()}`}>
+                                        <span className="label">{pred.label}</span>
+                                        <span className="val">{pred.value}</span>
+                                    </div>
+                                ))
+                            ) : (
+                                <>
+                                    <div className="p-stat warning">
+                                        <span className="label">Risk Day</span>
+                                        <span className="val">{data.predictions.nextRiskDay}</span>
+                                    </div>
+                                    <div className="p-stat alert">
+                                        <span className="label">Burnout</span>
+                                        <span className="val">{data.predictions.burnoutProbability}%</span>
+                                    </div>
+                                    <div className="p-stat safe">
+                                        <span className="label">Stability</span>
+                                        <span className="val">High</span>
+                                    </div>
+                                </>
+                            )}
                         </div>
                         {/* Smooth prediction curve line */}
                         <div className="pred-chart" style={{ height: '90px', marginTop: '15px' }}>

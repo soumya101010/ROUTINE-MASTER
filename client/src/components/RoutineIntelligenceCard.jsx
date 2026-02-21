@@ -105,12 +105,6 @@ export default function RoutineIntelligenceCard() {
                         color={{ start: '#0ea5e9', end: '#38bdf8' }}
                         gradientId="grad-study"
                     />
-                    <CircularProgress
-                        value={data.metrics.financial}
-                        label="Financial"
-                        color={{ start: '#f97316', end: '#fb923c' }}
-                        gradientId="grad-finance"
-                    />
                 </div>
 
                 <div className="ric-insight-pill">
