@@ -64,8 +64,8 @@ export default function RoutineIntelligenceCore() {
             {/* Header */}
             <header className="ric-core-topbar">
                 <button onClick={() => navigate(-1)} className="back-btn"><ArrowLeft size={24} /></button>
-                <div className="core-title-container animate-fade-in" style={{ flexWrap: 'nowrap', minWidth: 0, overflow: 'hidden' }}>
-                    <h1 className="module-title text-gradient" style={{ margin: 0, fontSize: 'clamp(1rem, 5vw, 24px)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Routine Intelligence</h1>
+                <div className="core-title-container animate-fade-in" style={{ flexWrap: 'nowrap', minWidth: 0 }}>
+                    <h1 className="module-title text-gradient" style={{ margin: 0, fontSize: '28px', fontWeight: 800, lineHeight: 1.1, whiteSpace: 'normal', wordBreak: 'break-word' }}>Routine Intelligence</h1>
                     <span className="badge" style={{ fontSize: '0.85rem', padding: '4px 10px', whiteSpace: 'nowrap', flexShrink: 0 }}>Core</span>
                 </div>
                 <div className="top-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>

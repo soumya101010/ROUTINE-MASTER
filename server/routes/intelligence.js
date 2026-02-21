@@ -134,19 +134,23 @@ router.get('/core', async (req, res) => {
             const dayStart = new Date(targetDate.setHours(0, 0, 0, 0));
             const dayEnd = new Date(targetDate.setHours(23, 59, 59, 999));
 
-            // Focus for the day
+            // Focus for the day (all focus sessions)
             const dayFocus = data.focusSessions.filter(f => new Date(f.completedAt) >= dayStart && new Date(f.completedAt) <= dayEnd);
             const dayFocusMins = dayFocus.reduce((sum, f) => sum + f.duration, 0);
             const dailyFocusScore = Math.min(100, Math.round((dayFocusMins / 60) * 100)); // 1 hr = 100%
 
-            // Study for the day (Focus sessions tagged 'study')
+            // Study for the day (Focus sessions specifically attached to 'study' items)
             const dayStudy = dayFocus.filter(f => f.linkedTo && f.linkedTo.itemType === 'study');
             const dayStudyMins = dayStudy.reduce((sum, f) => sum + f.duration, 0);
             const dailyStudyScore = Math.min(100, Math.round((dayStudyMins / 60) * 100));
 
             // Routines / Load for the day
-            // Rough proxy: focus intensity + baseline 20
-            const dailyLoadScore = Math.min(100, dailyFocusScore * 0.5 + 20);
+            // Count total tasks completed across all routines on that day vs total tasks
+            // If historical routine data without timestamps is not easily accessible per DAY,
+            // we will evaluate the current routine's completion ratio.
+            const totalTasks = data.routines.reduce((sum, r) => sum + (r.tasks ? r.tasks.length : 0), 0);
+            const completedTasks = data.routines.reduce((sum, r) => sum + (r.tasks ? r.tasks.filter(t => t.completed).length : 0), 0);
+            const dailyLoadScore = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
 
             performanceData.push({
                 date: days[dayStart.getDay()],
@@ -165,14 +169,15 @@ router.get('/core', async (req, res) => {
 
         // Real Module Performance Calculation (best effort mapping)
         const modulePerformance = [
-            { name: 'Time', score: Math.round((data.metrics.studyLoad + data.metrics.focus) / 2) || 0 }, // Proxy
-            { name: 'Goals', score: data.goals.filter(g => g.status === 'completed').length > 0 ? Math.round((data.goals.filter(g => g.status === 'completed').length / data.goals.length) * 100) : 0 },
+            { name: 'Time', score: routineScore }, // Time reflects true execution of scheduled routine blocks
+
+            { name: 'Goals', score: data.goals.length > 0 ? Math.round(data.goals.reduce((sum, g) => sum + (g.progress || 0), 0) / data.goals.length) : 0 },
             { name: 'Focus', score: data.metrics.focus },
             { name: 'Habits', score: data.metrics.consistency },
             { name: 'Attendance', score: data.attendance.length > 0 ? Math.round((data.attendance.filter(a => a.status === 'present').length / data.attendance.length) * 100) : 0 },
             { name: 'Routines', score: routineScore },
             { name: 'Study', score: data.metrics.studyLoad },
-            { name: 'Documents', score: Math.min(100, data.documents.length * 10) }, // Proxy: 10 docs = 100%
+            { name: 'Documents', score: data.documents.length > 0 ? 100 : 0 },
             { name: 'Expenses', score: data.metrics.financial }
         ];
 
