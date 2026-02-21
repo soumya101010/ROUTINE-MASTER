@@ -251,12 +251,8 @@ router.post('/generate-ai', async (req, res) => {
     try {
         const { metrics } = req.body;
 
-        if (!process.env.GEMINI_API_KEY) {
-            return res.json({
-                AISynthesis: "AI dynamic analysis requires a valid API key. System is currently operating in offline mode using rule-based algorithms.",
-                CausalChain: "Missing API Key -> Fallback to Static Rules",
-                Recommendations: []
-            });
+        if (!GEMINI_API_KEY) {
+            return res.status(500).json({ error: 'Gemini API key not configured' });
         }
 
         const prompt = `You are Gemini, the user's highly intelligent and supportive personal routine consultant.
@@ -290,61 +286,44 @@ router.post('/generate-ai', async (req, res) => {
         }
         Provide exactly 3 recommendations. Return ONLY valid JSON.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
             })
         });
 
-        const llmData = await response.json();
-        if (!response.ok) {
-            console.error('Gemini API Error:', llmData);
-            throw new Error(`Gemini API error: ${response.status} - ${JSON.stringify(llmData)}`);
+        const result = await response.json();
+
+        if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts) {
+            console.error('Gemini API Error:', result);
+            return res.status(500).json({ error: 'Empty response from Gemini' });
         }
 
-        let textResp = llmData.candidates[0].content.parts[0].text;
+        const text = result.candidates[0].content.parts[0].text;
+        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+        const jsonResponse = JSON.parse(cleanedText);
 
-        // Robust JSON extraction
-        const jsonMatch = textResp.match(/\{[\s\S]*\}/);
-        if (jsonMatch) {
-            textResp = jsonMatch[0];
-        }
+        res.json(jsonResponse);
 
-        const parsed = JSON.parse(textResp);
-
-        res.json({
-            DynamicTitle: parsed.DynamicTitle || "Steady Flow",
-            PriorityLabel: parsed.PriorityLabel || "EXECUTE",
-            AISynthesis: parsed.AISynthesis || "Looking good today! Just keep moving forward.",
-            CausalChain: parsed.CausalChain || "Consistent Effort -> Stable Progress",
-            AIPredictions: parsed.AIPredictions || [],
-            WeeklySummary: parsed.WeeklySummary || "You've been holding it down well this week. Keep up the rhythm!",
-            MonthlyOutlook: parsed.MonthlyOutlook || "Next month is looking bright if you stick to your current path.",
-            Recommendations: parsed.Recommendations || [],
-            source: "Gemini AI"
-        });
     } catch (error) {
         console.error('LLM Generation Error:', error);
-        res.status(500).json({
-            error: 'Failed to generate AI summary',
-            AISynthesis: "Unable to reach intelligence formatting layer.",
-            CausalChain: "Network Error -> AI Degradation",
-            Recommendations: []
-        });
+        res.status(500).json({ error: 'Failed to generate AI insights' });
     }
 });
 
-// POST /api/intelligence/chat (Ask/Consult AI)
+// POST /api/intelligence/chat (Consultant Chat)
 router.post('/chat', async (req, res) => {
     try {
         const { message, metrics } = req.body;
 
-        if (!process.env.GEMINI_API_KEY) {
-            return res.json({
-                reply: "I'm currently in offline mode, friend! Once the Gemini system is connected, I can chat with you about your routine in detail. For now, try to stick to your habits!"
-            });
+        if (!GEMINI_API_KEY) {
+            return res.status(500).json({ reply: "My brain isn't connected to the cloud right now, friend. Check back soon?" });
         }
 
         const prompt = `You are Gemini, acting as a supportive and highly intelligent routine mentor. 
@@ -355,20 +334,20 @@ router.post('/chat', async (req, res) => {
         
         Use your full intelligence to provide a helpful, insightful, and motivating answer. Don't just give generic advice; analyze their stats to explain WHY you're suggesting something. Maintain a friendly, supportive tone, but be the powerhouse AI that you are.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: {
+                'Content-Type': 'application/json'
+            },
             body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }]
+                contents: [{
+                    parts: [{ text: prompt }]
+                }]
             })
         });
 
-        if (!response.ok) {
-            throw new Error(`Gemini API error: ${response.status}`);
-        }
-
-        const llmData = await response.json();
-        const reply = llmData.candidates[0].content.parts[0].text;
+        const result = await response.json();
+        const reply = result.candidates[0].content.parts[0].text;
 
         res.json({ reply });
     } catch (error) {
