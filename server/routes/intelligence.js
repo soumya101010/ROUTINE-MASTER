@@ -15,7 +15,9 @@ const router = express.Router();
 // HELPER: OpenRouter AI Gateway Logic - Priorities: Gemini > OpenAI > Others
 const MODELS_TO_TRY = [
     'google/gemini-flash-1.5',
+    'google/gemini-pro-1.5',
     'google/gemini-flash-1.5-8b',
+    'google/gemini-flash-1.5-exp',
     'openai/gpt-4o-mini',
     'anthropic/claude-3-haiku',
     'meta-llama/llama-3.1-8b-instruct'
@@ -54,15 +56,13 @@ async function callOpenRouterAI(messages) {
                 const content = result.choices[0].message.content;
                 console.log(`OpenRouter: Success with ${model}`);
                 return { content, model };
-            } else if (response.status === 429) {
-                console.warn(`OpenRouter: Rate limit for ${model}. Trying next...`);
-                continue;
             } else {
-                console.error(`OpenRouter: Error from ${model}:`, response.status, JSON.stringify(result).substring(0, 150));
+                const errorInfo = JSON.stringify(result).substring(0, 150);
+                console.warn(`OpenRouter: Skipping ${model} (Status: ${response.status}) - ${errorInfo}`);
                 continue;
             }
         } catch (err) {
-            console.error(`OpenRouter: Failed to reach ${model}:`, err.message);
+            console.error(`OpenRouter: Critical error with ${model}:`, err.message);
         }
     }
     throw new Error('Intelligence system under heavy load');
@@ -295,6 +295,15 @@ router.get('/core', async (req, res) => {
             activeModel = model;
             const jsonMatch = aiRaw.match(/\{[\s\S]*\}/);
             aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : aiRaw);
+
+            // Inject active model name into recommendations source
+            if (aiAnalysis.aiLayer && aiAnalysis.aiLayer.recommendations) {
+                const modelName = activeModel.split('/').pop();
+                aiAnalysis.aiLayer.recommendations = aiAnalysis.aiLayer.recommendations.map(r => ({
+                    ...r,
+                    source: `Master AI (${modelName})`
+                }));
+            }
         } catch (e) {
             console.error("AI Analysis Failed, using minimal fallback:", e);
             aiAnalysis = {
@@ -400,6 +409,15 @@ router.post('/generate-ai', async (req, res) => {
             // Find JSON block if AI adds extra text
             const jsonMatch = resultText.match(/\{[\s\S]*\}/);
             aiResponse = JSON.parse(jsonMatch ? jsonMatch[0] : resultText);
+
+            // Inject active model name into recommendations source
+            if (aiResponse.Recommendations) {
+                const modelName = activeModel.split('/').pop();
+                aiResponse.Recommendations = aiResponse.Recommendations.map(r => ({
+                    ...r,
+                    source: `Master AI (${modelName})`
+                }));
+            }
         } catch (e) {
             console.error('JSON Extraction Error:', e, 'Raw:', resultText);
             return res.status(500).json({ error: 'Failed to parse intelligence data' });
