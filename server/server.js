@@ -15,6 +15,7 @@ import goalRoutes from './routes/goals.js';
 import focusRoutes from './routes/focus.js';
 import habitRoutes from './routes/habits.js';
 import weeklyReviewRoutes from './routes/weekly-review.js';
+import intelligenceRoutes from './routes/intelligence.js';
 
 // Trigger restart ensure modules loaded
 dotenv.config();
@@ -56,6 +57,7 @@ app.use('/api/goals', goalRoutes);
 app.use('/api/focus', focusRoutes);
 app.use('/api/habits', habitRoutes);
 app.use('/api/weekly-review', weeklyReviewRoutes);
+app.use('/api/intelligence', intelligenceRoutes);
 
 // Health check — root, /health, and /api/health all return 200
 // These ensure UptimeRobot pings succeed and Render doesn't sleep the service

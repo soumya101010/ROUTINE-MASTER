@@ -4,6 +4,7 @@ import { Bell, Calendar, BookOpen, FileText, DollarSign, TrendingUp, TrendingDow
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, Legend } from 'recharts';
 import GravityContainer from '../components/GravityContainer';
 import Card from '../components/Card';
+import RoutineIntelligenceCard from '../components/RoutineIntelligenceCard';
 import { reminderAPI, routineAPI, expenseAPI, goalAPI, focusAPI, habitAPI, weeklyReviewAPI } from '../utils/api';
 import './Dashboard.css';
 
@@ -303,6 +304,11 @@ export default function Dashboard() {
                     </Card>
                 </div>
             )}
+
+            {/* Master Brain Card (Routine Intelligence) */}
+            <div className="animate-fade-in" style={{ animationDelay: '0.2s', marginTop: '1.5rem' }}>
+                <RoutineIntelligenceCard />
+            </div>
 
             {/* Module Cards Grid */}
             <div className="module-cards-grid animate-fade-in" style={{ animationDelay: '0.2s', marginTop: '2rem' }}>

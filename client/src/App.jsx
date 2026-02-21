@@ -13,6 +13,7 @@ import Goals from './pages/Goals';
 import FocusMode from './pages/FocusMode';
 import Habits from './pages/Habits';
 import WeeklyReview from './pages/WeeklyReview';
+import RoutineIntelligenceCore from './pages/RoutineIntelligenceCore';
 import ParticleBackground from './components/ParticleBackground';
 import './App.css';
 
@@ -72,6 +73,7 @@ function App() {
             <Route path="/focus" element={<FocusMode />} />
             <Route path="/habits" element={<Habits />} />
             <Route path="/weekly-review" element={<WeeklyReview />} />
+            <Route path="/routine-intelligence" element={<RoutineIntelligenceCore />} />
           </Routes>
         </main>
       </div>

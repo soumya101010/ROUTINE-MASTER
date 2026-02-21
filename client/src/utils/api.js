@@ -123,4 +123,10 @@ export const weeklyReviewAPI = {
     save: (data) => api.post('/weekly-review', data)
 };
 
+// Routine Intelligence
+export const intelligenceAPI = {
+    getDashboard: () => api.get('/intelligence/dashboard'),
+    getCore: () => api.get('/intelligence/core')
+};
+
 export default api;
