@@ -17,6 +17,76 @@ const ModuleIcons = {
     'Expenses': { icon: DollarSign, color: '#ef4444', route: '/expenses' }
 };
 
+const AISummary = ({ currentMetrics, initialLayer }) => {
+    const [aiDoc, setAiDoc] = useState(null);
+    const [loadingAI, setLoadingAI] = useState(false);
+    const [showInsights, setShowInsights] = useState(false);
+
+    useEffect(() => {
+        const fetchAI = async () => {
+            if (!currentMetrics) return;
+            setLoadingAI(true);
+            try {
+                const res = await intelligenceAPI.generateAI(currentMetrics);
+                setAiDoc(res.data);
+            } catch (err) {
+                console.error("Failed to generate AI:", err);
+            } finally {
+                setLoadingAI(false);
+            }
+        };
+        fetchAI();
+    }, [currentMetrics]);
+
+    const synthesisText = aiDoc ? aiDoc.AISynthesis : initialLayer.humanReadableSummary;
+    const causalText = aiDoc ? aiDoc.CausalChain : (initialLayer.causeEffectChains && initialLayer.causeEffectChains[0]);
+
+    return (
+        <div className="ai-summary-content">
+            {currentMetrics.consistency > 75 ? (
+                <div className="summary-item positive"><span className="dot bg-blue-500"></span> Strong Habits Maintained</div>
+            ) : (
+                <div className="summary-item warning"><TriangleAlert size={16} /> Inconsistent Habits</div>
+            )}
+            {currentMetrics.studyLoad > 80 ? (
+                <div className="summary-item warning"><TriangleAlert size={16} /> Approaching Study Overload</div>
+            ) : (
+                <div className="summary-item positive"><span className="dot bg-green-500"></span> Study Load Stable</div>
+            )}
+            {currentMetrics.financial < 60 ? (
+                <div className="summary-item highlight"><FileText size={16} /> Expense Drift Detected</div>
+            ) : (
+                <div className="summary-item positive"><span className="dot bg-green-500"></span> Finances Stable</div>
+            )}
+
+            <div className="brain-graphic-small">
+                <Brain size={80} className="text-blue-400" style={{ filter: 'drop-shadow(0 0 15px rgba(96, 165, 250, 0.5))' }} />
+            </div>
+
+            {showInsights && (
+                <div className="insights-expansion animate-fade-in" style={{ marginTop: '1rem', marginBottom: '1rem', padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '12px', fontSize: '0.85rem', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
+                    {loadingAI ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#a855f7' }}>
+                            <Loader2 className="animate-spin" size={16} /> Generating AI Synthesis...
+                        </div>
+                    ) : (
+                        <>
+                            <div style={{ color: '#f1f5f9', marginBottom: '0.5rem', fontWeight: 600 }}>AI Synthesis</div>
+                            <p style={{ color: '#cbd5e1', marginBottom: '0.75rem', lineHeight: 1.5 }}>{synthesisText}</p>
+                            <div style={{ color: '#f1f5f9', marginBottom: '0.25rem', fontWeight: 600 }}>Causal Chain Detected</div>
+                            <p style={{ color: '#fca5a5', lineHeight: 1.5 }}>{causalText}</p>
+                        </>
+                    )}
+                </div>
+            )}
+
+            <button className="insights-btn" onClick={() => setShowInsights(!showInsights)}>
+                {showInsights ? 'Close Insights' : 'Deep Insights >'}
+            </button>
+        </div>
+    );
+};
+
 export default function RoutineIntelligenceCore() {
     const [data, setData] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -254,40 +324,7 @@ export default function RoutineIntelligenceCore() {
                     {/* AI Summary Sidebar */}
                     <div className="ric-panel ai-summary-panel">
                         <div className="panel-title">AI Summary</div>
-                        <div className="ai-summary-content">
-                            {data.metrics.consistency > 75 ? (
-                                <div className="summary-item positive"><span className="dot bg-blue-500"></span> Strong Habits Maintained</div>
-                            ) : (
-                                <div className="summary-item warning"><TriangleAlert size={16} /> Inconsistent Habits</div>
-                            )}
-                            {data.metrics.studyLoad > 80 ? (
-                                <div className="summary-item warning"><TriangleAlert size={16} /> Approaching Study Overload</div>
-                            ) : (
-                                <div className="summary-item positive"><span className="dot bg-green-500"></span> Study Load Stable</div>
-                            )}
-                            {data.metrics.financial < 60 ? (
-                                <div className="summary-item highlight"><FileText size={16} /> Expense Drift Detected</div>
-                            ) : (
-                                <div className="summary-item positive"><span className="dot bg-green-500"></span> Finances Stable</div>
-                            )}
-
-                            <div className="brain-graphic-small">
-                                <Brain size={80} className="text-blue-400" style={{ filter: 'drop-shadow(0 0 15px rgba(96, 165, 250, 0.5))' }} />
-                            </div>
-
-                            {showInsights && (
-                                <div className="insights-expansion animate-fade-in" style={{ marginTop: '1rem', marginBottom: '1rem', padding: '1rem', background: 'rgba(139, 92, 246, 0.1)', borderRadius: '12px', fontSize: '0.85rem', border: '1px solid rgba(139, 92, 246, 0.3)' }}>
-                                    <div style={{ color: '#f1f5f9', marginBottom: '0.5rem', fontWeight: 600 }}>AI Synthesis</div>
-                                    <p style={{ color: '#cbd5e1', marginBottom: '0.75rem', lineHeight: 1.5 }}>{data.aiLayer.humanReadableSummary}</p>
-                                    <div style={{ color: '#f1f5f9', marginBottom: '0.25rem', fontWeight: 600 }}>Causal Chain Detected</div>
-                                    <p style={{ color: '#fca5a5', lineHeight: 1.5 }}>{data.aiLayer.causeEffectChains[0]}</p>
-                                </div>
-                            )}
-
-                            <button className="insights-btn" onClick={() => setShowInsights(!showInsights)}>
-                                {showInsights ? 'Close Insights' : 'Deep Insights >'}
-                            </button>
-                        </div>
+                        <AISummary currentMetrics={data.metrics} initialLayer={data.aiLayer} />
                     </div>
 
                     {/* AI Recommendations */}

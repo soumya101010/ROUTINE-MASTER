@@ -126,7 +126,8 @@ export const weeklyReviewAPI = {
 // Routine Intelligence
 export const intelligenceAPI = {
     getDashboard: () => api.get('/intelligence/dashboard'),
-    getCore: () => api.get('/intelligence/core')
+    getCore: () => api.get('/intelligence/core'),
+    generateAI: (metrics) => api.post('/intelligence/generate-ai', { metrics })
 };
 
 export default api;

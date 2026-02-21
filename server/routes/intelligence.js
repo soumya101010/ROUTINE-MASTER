@@ -275,4 +275,46 @@ router.get('/core', async (req, res) => {
     }
 });
 
+// POST /api/intelligence/generate-ai (Dynamic LLM Call)
+router.post('/generate-ai', async (req, res) => {
+    try {
+        const { metrics } = req.body;
+
+        if (!process.env.GEMINI_API_KEY) {
+            // Fallback structured generation if API key is not configured
+            return res.json({
+                AISynthesis: "AI Synthesis requires a GEMINI_API_KEY in the environment variables to activate dynamic analysis. Focus is holding steady.",
+                CausalChain: "Missing API Key -> AI Generation Disabled"
+            });
+        }
+
+        const prompt = `You are an analytical assistant for a productivity dashboard. Here is the user's real-time data: ${JSON.stringify(metrics)}. Based STRICTLY on these numbers, write a 2-sentence 'AI Synthesis'. Do not invent trends. If a metric is below 30%, address it as a critical failure. Then, identify a 'Causal Chain' based on the worst-performing metric, formatted as 'Root Cause -> Immediate Effect'. Return ONLY a valid JSON object matching exactly this schema: { "AISynthesis": "string", "CausalChain": "string" }`;
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { responseMimeType: "application/json" }
+            })
+        });
+
+        if (!response.ok) {
+            throw new Error(`Gemini API error: ${response.status}`);
+        }
+
+        const llmData = await response.json();
+        const textResp = llmData.candidates[0].content.parts[0].text;
+        const parsed = JSON.parse(textResp);
+
+        res.json({
+            AISynthesis: parsed.AISynthesis || "Synthesis generation failed.",
+            CausalChain: parsed.CausalChain || "Unknown Cause -> Unknown Effect"
+        });
+    } catch (error) {
+        console.error('LLM Generation Error:', error);
+        res.status(500).json({ error: 'Failed to generate AI summary', AISynthesis: "Unable to reach formatting intelligence layer.", CausalChain: "Network Error -> Degradation" });
+    }
+});
+
 export default router;
