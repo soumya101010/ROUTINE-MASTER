@@ -11,6 +11,47 @@ import Document from '../models/Document.js';
 import WeeklyReview from '../models/WeeklyReview.js';
 
 const router = express.Router();
+
+// HELPER: AI Model Fallback Logic
+const MODELS_TO_TRY = ['gemini-1.5-flash', 'gemini-flash-latest', 'gemini-1.5-pro', 'gemini-pro'];
+
+async function callGeminiWithFallback(prompt) {
+    if (!process.env.GEMINI_API_KEY) {
+        throw new Error('GEMINI_API_KEY is missing');
+    }
+
+    for (const model of MODELS_TO_TRY) {
+        try {
+            console.log(`Attempting Gemini model: ${model}`);
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            });
+
+            const result = await response.json();
+
+            if (response.status === 200) {
+                if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
+                    console.log(`Success with model: ${model}`);
+                    return result.candidates[0].content.parts[0].text;
+                }
+            } else if (response.status === 429) {
+                console.warn(`Rate limit (429) hit for model ${model}. Trying next...`);
+                continue; // Try next model
+            } else {
+                console.error(`Error from ${model}:`, response.status, JSON.stringify(result).substring(0, 100));
+                // If it's a 400 (Bad Request), it might be our payload, but let's try next model just in case it's a model specific constraint
+                continue;
+            }
+        } catch (err) {
+            console.error(`Failed to reach Gemini (${model}):`, err.message);
+        }
+    }
+    const isRateLimited = true; // If we finish the loop but hit 429s, we should mention it
+    throw new Error('Intelligence system is currently under heavy load. Please try again in 60 seconds.');
+}
+
 // Helper to get date boundaries
 const getTrailingDates = (daysAgo) => {
     const end = new Date();
@@ -249,22 +290,23 @@ router.get('/core', async (req, res) => {
 // POST /api/intelligence/generate-ai (Dynamic LLM Call)
 router.post('/generate-ai', async (req, res) => {
     try {
+        const { metrics } = req.body;
         const fullContext = {
             metrics,
-            habits: (await Habit.find({}).limit(20).lean()),
-            routines: (await Routine.find({}).limit(20).lean()),
-            focus: (await FocusSession.find({}).limit(20).lean()),
-            expenses: (await Expense.find({}).limit(10).lean()),
-            attendance: (await Attendance.find({}).limit(10).lean()),
-            study: (await StudyItem.find({}).limit(10).lean()),
-            goals: (await Goal.find({}).limit(10).lean())
+            habits: await Habit.find({}).limit(15).select('name currentStreak status').lean(),
+            routines: await Routine.find({}).limit(15).select('name status tasks').lean(),
+            focus: await FocusSession.find({}).limit(15).select('duration completedAt').lean(),
+            expenses: await Expense.find({}).limit(10).select('title amount type category').lean(),
+            attendance: await Attendance.find({}).limit(10).select('date status').lean(),
+            study: await StudyItem.find({}).limit(10).select('name type progress').lean(),
+            goals: await Goal.find({}).limit(10).select('title progress status').lean()
         };
 
-        // Log key presence (first 4 chars) for debugging on Render
+        // Log key presence for debugging on Render
         if (process.env.GEMINI_API_KEY) {
-            console.log('Gemini API Key loaded (starts with):', process.env.GEMINI_API_KEY.substring(0, 4));
+            console.log('Gemini API Key active. Model: gemini-flash-latest');
         } else {
-            console.error('CRITICAL: GEMINI_API_KEY is MISSING from process.env');
+            console.error('CRITICAL: GEMINI_API_KEY is MISSING');
         }
 
         const prompt = `You are the Master Control AI. 
@@ -303,38 +345,26 @@ router.post('/generate-ai', async (req, res) => {
         }
         Provide exactly 5 BulletInsights and 3 Recommendations. Return ONLY valid JSON.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
+        const resultText = await callGeminiWithFallback(prompt);
 
-        const result = await response.json();
-
-        if (response.status !== 200) {
-            console.error('Gemini API Error Status:', response.status);
-            console.error('Gemini API Error Body:', JSON.stringify(result));
-            return res.status(500).json({ error: `Gemini API returned ${response.status}`, details: result });
+        // Robust parsing of JSON from the response
+        let aiResponse;
+        try {
+            // Find JSON block if Gemini adds extra text
+            const jsonMatch = resultText.match(/\{[\s\S]*\}/);
+            aiResponse = JSON.parse(jsonMatch ? jsonMatch[0] : resultText);
+        } catch (e) {
+            console.error('JSON Extraction Error:', e, 'Raw:', resultText);
+            return res.status(500).json({ error: 'Failed to parse intelligence data' });
         }
 
-        if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts) {
-            console.error('Gemini API Structure Error:', result);
-            return res.status(500).json({ error: 'Incomplete response from Gemini' });
-        }
-
-        const text = result.candidates[0].content.parts[0].text;
-
-        // Robust JSON extraction using regex to find the first { and last }
-        const jsonMatch = text.match(/\{[\s\S]*\}/);
-        const cleanedText = jsonMatch ? jsonMatch[0] : text;
-
-        const jsonResponse = JSON.parse(cleanedText);
-
-        res.json(jsonResponse);
-
+        res.json(aiResponse);
     } catch (error) {
-        console.error('LLM Generation Error:', error);
-        res.status(500).json({ error: 'Failed to generate AI insights' });
+        console.error('AI Strategy Generation Error:', error);
+        if (error.message.includes('heavy load')) {
+            return res.status(429).json({ error: 'System processing limit reached. Please wait a minute.' });
+        }
+        res.status(500).json({ error: 'Master Control analysis interrupted' });
     }
 });
 
@@ -359,24 +389,14 @@ router.post('/chat', async (req, res) => {
         3. Never "pivot" a general knowledge question back to the site's metrics. If they ask about the President of India, talk about the President of India.
         4. Maintain an elite, high-knowledge, and helpful persona. You are a limitless AI power.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
-        });
-
-        const result = await response.json();
-
-        if (response.status !== 200) {
-            console.error('Chat API Error Status:', response.status);
-            console.error('Chat API Error Body:', JSON.stringify(result));
-            return res.status(500).json({ reply: "I'm having a little trouble thinking right now. Maybe try again in a bit?" });
-        }
-
-        const reply = result.candidates[0].content.parts[0].text;
+        const reply = await callGeminiWithFallback(prompt);
         res.json({ reply });
     } catch (error) {
         console.error('LLM Chat Error:', error);
+        // If we hit the rate limit on all models
+        if (error.message.includes('heavy load')) {
+            return res.status(429).json({ reply: "My processing core is currently reaching its limit across all available models. Could you give me a minute to cool down?" });
+        }
         res.status(500).json({ reply: "I'm having a little trouble thinking right now. Maybe try again in a bit, friend?" });
     }
 });
