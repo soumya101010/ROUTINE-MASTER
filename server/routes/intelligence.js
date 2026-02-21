@@ -251,7 +251,7 @@ router.post('/generate-ai', async (req, res) => {
     try {
         const { metrics } = req.body;
 
-        if (!GEMINI_API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             return res.status(500).json({ error: 'Gemini API key not configured' });
         }
 
@@ -286,7 +286,7 @@ router.post('/generate-ai', async (req, res) => {
         }
         Provide exactly 3 recommendations. Return ONLY valid JSON.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -306,7 +306,11 @@ router.post('/generate-ai', async (req, res) => {
         }
 
         const text = result.candidates[0].content.parts[0].text;
-        const cleanedText = text.replace(/```json/g, '').replace(/```/g, '').trim();
+
+        // Robust JSON extraction using regex to find the first { and last }
+        const jsonMatch = text.match(/\{[\s\S]*\}/);
+        const cleanedText = jsonMatch ? jsonMatch[0] : text;
+
         const jsonResponse = JSON.parse(cleanedText);
 
         res.json(jsonResponse);
@@ -322,7 +326,7 @@ router.post('/chat', async (req, res) => {
     try {
         const { message, metrics } = req.body;
 
-        if (!GEMINI_API_KEY) {
+        if (!process.env.GEMINI_API_KEY) {
             return res.status(500).json({ reply: "My brain isn't connected to the cloud right now, friend. Check back soon?" });
         }
 
@@ -334,7 +338,7 @@ router.post('/chat', async (req, res) => {
         
         Use your full intelligence to provide a helpful, insightful, and motivating answer. Don't just give generic advice; analyze their stats to explain WHY you're suggesting something. Maintain a friendly, supportive tone, but be the powerhouse AI that you are.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
