@@ -12,18 +12,21 @@ import WeeklyReview from '../models/WeeklyReview.js';
 
 const router = express.Router();
 
-// HELPER: OpenRouter AI Gateway Logic
+// HELPER: OpenRouter AI Gateway Logic - Priorities: Gemini > OpenAI > Others
 const MODELS_TO_TRY = [
-    'google/gemini-flash-1.5-8b',
     'google/gemini-flash-1.5',
+    'google/gemini-flash-1.5-8b',
+    'openai/gpt-4o-mini',
     'anthropic/claude-3-haiku',
     'meta-llama/llama-3.1-8b-instruct'
 ];
 
 async function callOpenRouterAI(messages) {
     if (!process.env.OPENROUTER_API_KEY) {
-        // Fallback to Gemini if OpenRouter key is missing but Gemini is there
-        if (process.env.GEMINI_API_KEY) return callGeminiDirectly(messages);
+        if (process.env.GEMINI_API_KEY) {
+            const content = await callGeminiDirectly(messages);
+            return { content, model: 'google/gemini-1.5-flash (Direct)' };
+        }
         throw new Error('AI API Keys are missing');
     }
 
@@ -50,7 +53,7 @@ async function callOpenRouterAI(messages) {
             if (response.status === 200) {
                 const content = result.choices[0].message.content;
                 console.log(`OpenRouter: Success with ${model}`);
-                return content;
+                return { content, model };
             } else if (response.status === 429) {
                 console.warn(`OpenRouter: Rate limit for ${model}. Trying next...`);
                 continue;
@@ -249,9 +252,16 @@ router.get('/core', async (req, res) => {
 
         // --- PURE AI ANALYSIS LAYER ---
         const aiPrompt = [
-            { role: "system", content: "You are the Master Control AI. Analyze the user's weekly metrics and provide a deep strategic analysis. Return ONLY a JSON object." },
             {
-                role: "user", content: `Data: ${JSON.stringify({
+                role: "system",
+                content: `You are the Master Control AI, acting as a supportive, encouraging, and friendly mentor. 
+                Your tone should be warm, easy to understand, and motivating. 
+                Avoid overly technical jargon when talking to the user.
+                Return ONLY a JSON object.`
+            },
+            {
+                role: "user",
+                content: `Data: ${JSON.stringify({
                     metrics: data.metrics,
                     domainStatus,
                     recentActivities: {
@@ -264,10 +274,10 @@ router.get('/core', async (req, res) => {
             Generate the following JSON:
             {
                 "aiLayer": {
-                    "humanReadableSummary": "2-sentence high-level system analysis",
-                    "causeEffectChains": ["Chain 1", "Chain 2"],
+                    "humanReadableSummary": "2-sentence warm, friendly, and supportive system analysis. Be encouraging!",
+                    "causeEffectChains": ["Friendly explanation of a pattern", "Another friendly pattern"],
                     "recommendations": [
-                        { "title": "...", "impact": 0-100, "risk": "Low|Med|High", "icon": "Cpu", "source": "Master Control AI", "action": "..." }
+                        { "title": "Encouraging Title", "impact": 0-100, "risk": "Low|Med|High", "icon": "Cpu", "source": "Master Control AI", "action": "Clear, friendly instruction" }
                     ]
                 },
                 "predictions": {
@@ -279,14 +289,16 @@ router.get('/core', async (req, res) => {
         ];
 
         let aiAnalysis;
+        let activeModel = 'N/A';
         try {
-            const aiRaw = await callOpenRouterAI(aiPrompt);
+            const { content: aiRaw, model } = await callOpenRouterAI(aiPrompt);
+            activeModel = model;
             const jsonMatch = aiRaw.match(/\{[\s\S]*\}/);
             aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : aiRaw);
         } catch (e) {
             console.error("AI Analysis Failed, using minimal fallback:", e);
             aiAnalysis = {
-                aiLayer: { humanReadableSummary: "System analysis temporarily offline.", causeEffectChains: [], recommendations: [] },
+                aiLayer: { humanReadableSummary: "I'm having a little trouble seeing the full picture right now, but stay consistent, friend!", causeEffectChains: [], recommendations: [] },
                 predictions: { nextRiskDay: "N/A", burnoutProbability: 0, financialRisk: "Stable" }
             };
         }
@@ -302,7 +314,8 @@ router.get('/core', async (req, res) => {
             },
             heatIndicator,
             aiLayer: aiAnalysis.aiLayer,
-            predictions: aiAnalysis.predictions
+            predictions: aiAnalysis.predictions,
+            modelInfo: activeModel
         });
     } catch (error) {
         console.error('Intelligence Core Error:', error);
@@ -369,11 +382,17 @@ router.post('/generate-ai', async (req, res) => {
         Provide exactly 5 BulletInsights and 3 Recommendations. Return ONLY valid JSON.`;
 
         const messages = [
-            { role: "system", content: "You are the Master Control AI. Analyze the system data and return exactly the specified JSON schema. Return ONLY JSON." },
+            {
+                role: "system",
+                content: `You are the Master Control AI. 
+                Tone: Warm, friendly, supportive mentor.
+                Use non-technical, simple language.
+                Return exactly the specified JSON schema. Return ONLY JSON.`
+            },
             { role: "user", content: prompt }
         ];
 
-        const resultText = await callOpenRouterAI(messages);
+        const { content: resultText, model: activeModel } = await callOpenRouterAI(messages);
 
         // Robust parsing of JSON from the response
         let aiResponse;
@@ -385,6 +404,9 @@ router.post('/generate-ai', async (req, res) => {
             console.error('JSON Extraction Error:', e, 'Raw:', resultText);
             return res.status(500).json({ error: 'Failed to parse intelligence data' });
         }
+
+        // Add model info to the response
+        aiResponse.modelInfo = activeModel;
 
         res.json(aiResponse);
     } catch (error) {
@@ -415,12 +437,17 @@ router.post('/chat', async (req, res) => {
         4. Maintain an elite, high-knowledge, and helpful persona. You are a limitless AI power.`;
 
         const messages = [
-            { role: "system", content: "You are a master intelligence consultant. Answer directly and accurately. Use real stats only if relevant." },
+            {
+                role: "system",
+                content: `You are a warm, supportive, and friendly master intelligence consultant. 
+                Be encouraging and use simple language. 
+                Answer directly and accurately. Use real stats only if naturally relevant.`
+            },
             { role: "user", content: prompt }
         ];
 
-        const reply = await callOpenRouterAI(messages);
-        res.json({ reply });
+        const { content: reply, model } = await callOpenRouterAI(messages);
+        res.json({ reply, modelInfo: model });
     } catch (error) {
         console.error('LLM Chat Error:', error);
         res.status(500).json({ reply: "I'm having a little trouble thinking right now. Maybe try again in a bit, friend?" });
