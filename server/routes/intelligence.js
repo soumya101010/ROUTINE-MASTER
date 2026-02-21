@@ -139,10 +139,8 @@ router.get('/core', async (req, res) => {
             const dayFocusMins = dayFocus.reduce((sum, f) => sum + f.duration, 0);
             const dailyFocusScore = Math.min(100, Math.round((dayFocusMins / 60) * 100)); // 1 hr = 100%
 
-            // Study for the day (Focus sessions specifically attached to 'study' items)
-            const dayStudy = dayFocus.filter(f => f.linkedTo && f.linkedTo.itemType === 'study');
-            const dayStudyMins = dayStudy.reduce((sum, f) => sum + f.duration, 0);
-            const dailyStudyScore = Math.min(100, Math.round((dayStudyMins / 60) * 100));
+            // Study for the day (maps to absolute total load)
+            const dailyStudyScore = data.metrics.studyLoad;
 
             // Routines / Load for the day
             // Count total tasks completed across all routines on that day vs total tasks
@@ -181,23 +179,21 @@ router.get('/core', async (req, res) => {
             { name: 'Expenses', score: data.metrics.financial }
         ];
 
-        // Failure Causes Pie Chart (Inverse of module performance to highlight weak areas)
-        const failureColors = ['#f43f5e', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981'];
-        let failureCauses = modulePerformance
-            .filter(m => m.score < 100) // Only look at imperfect areas
-            .map(m => ({ name: m.name, value: 100 - m.score, trueScore: m.score }))
-            .sort((a, b) => b.value - a.value) // Sort by largest failure
-            .slice(0, 5) // Take top 5 struggles
+        // Performance Distribution Pie Chart (Direct mapping of their scores to slices to satisfy "larger number = larger slice")
+        const pieColors = ['#f43f5e', '#f59e0b', '#8b5cf6', '#3b82f6', '#10b981'];
+        let performanceDistribution = modulePerformance
+            .filter(m => m.score > 0) // Only look at modules with data
+            .sort((a, b) => b.score - a.score) // Sort by highest score
+            .slice(0, 5) // Take top 5
             .map((item, index) => ({
                 name: item.name,
-                value: item.value, // Linear scaling: True percentage gap from 100
-                trueScore: item.trueScore, // True module score for the text legend
-                fill: failureColors[index % failureColors.length]
+                value: item.score, // Absolute true score dictates slice size
+                fill: pieColors[index % pieColors.length]
             }));
 
-        // Fallback if the user is perfect everywhere
-        if (failureCauses.length === 0) {
-            failureCauses = [{ name: 'None', value: 100, trueScore: 100, fill: '#10b981' }];
+        // Fallback
+        if (performanceDistribution.length === 0) {
+            performanceDistribution = [{ name: 'None', value: 100, fill: '#10b981' }];
         }
 
         // Dynamic AI Layer Engine
@@ -263,7 +259,7 @@ router.get('/core', async (req, res) => {
             charts: {
                 performanceData,
                 modulePerformance,
-                failureCauses
+                performanceDistribution
             },
             heatIndicator,
             aiLayer: {

@@ -218,15 +218,15 @@ export default function RoutineIntelligenceCore() {
                             </div>
                         </div>
 
-                        {/* Failure Causes (Pie Chart) */}
+                        {/* Domain Strengths (Pie Chart) */}
                         <div className="ric-panel failure-panel">
-                            <div className="panel-title">Failure Causes</div>
+                            <div className="panel-title">Domain Strengths</div>
                             <div className="pie-container flex-col-center">
                                 <div style={{ width: '100%', height: '160px' }}>
                                     <ResponsiveContainer width="100%" height="100%">
                                         <PieChart>
-                                            <Pie data={data.charts.failureCauses} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value" stroke="none">
-                                                {data.charts.failureCauses.map((entry, index) => (
+                                            <Pie data={data.charts.performanceDistribution} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value" stroke="none">
+                                                {data.charts.performanceDistribution.map((entry, index) => (
                                                     <Cell key={`cell-${index}`} fill={entry.fill} />
                                                 ))}
                                             </Pie>
@@ -235,7 +235,7 @@ export default function RoutineIntelligenceCore() {
                                     <div className="pie-center-text">This<br />Week</div>
                                 </div>
                                 <div className="pie-legends">
-                                    {data.charts.failureCauses.map((entry, i) => (
+                                    {data.charts.performanceDistribution.map((entry, i) => (
                                         <div key={i} className="pie-leg">
                                             <span className="dot" style={{ backgroundColor: entry.fill, boxShadow: `0 0 8px ${entry.fill}` }}></span>
                                             <span className="name">{entry.name}</span>
