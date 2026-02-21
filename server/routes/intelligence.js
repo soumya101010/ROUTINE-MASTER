@@ -12,44 +12,71 @@ import WeeklyReview from '../models/WeeklyReview.js';
 
 const router = express.Router();
 
-// HELPER: AI Model Fallback Logic
-const MODELS_TO_TRY = ['gemini-1.5-flash', 'gemini-flash-latest', 'gemini-1.5-pro', 'gemini-pro'];
+// HELPER: OpenRouter AI Gateway Logic
+const MODELS_TO_TRY = [
+    'google/gemini-flash-1.5-8b',
+    'google/gemini-flash-1.5',
+    'anthropic/claude-3-haiku',
+    'meta-llama/llama-3.1-8b-instruct'
+];
 
-async function callGeminiWithFallback(prompt) {
-    if (!process.env.GEMINI_API_KEY) {
-        throw new Error('GEMINI_API_KEY is missing');
+async function callOpenRouterAI(messages) {
+    if (!process.env.OPENROUTER_API_KEY) {
+        // Fallback to Gemini if OpenRouter key is missing but Gemini is there
+        if (process.env.GEMINI_API_KEY) return callGeminiDirectly(messages);
+        throw new Error('AI API Keys are missing');
     }
 
     for (const model of MODELS_TO_TRY) {
         try {
-            console.log(`Attempting Gemini model: ${model}`);
-            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+            console.log(`OpenRouter: Attempting model ${model}`);
+            const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY}`,
+                    "HTTP-Referer": "https://routine-master.onrender.com",
+                    "X-Title": "Routine Master Intelligence",
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    "model": model,
+                    "messages": messages,
+                    "response_format": { "type": "json_object" }
+                })
             });
 
             const result = await response.json();
 
             if (response.status === 200) {
-                if (result.candidates && result.candidates[0]?.content?.parts?.[0]?.text) {
-                    console.log(`Success with model: ${model}`);
-                    return result.candidates[0].content.parts[0].text;
-                }
+                const content = result.choices[0].message.content;
+                console.log(`OpenRouter: Success with ${model}`);
+                return content;
             } else if (response.status === 429) {
-                console.warn(`Rate limit (429) hit for model ${model}. Trying next...`);
-                continue; // Try next model
+                console.warn(`OpenRouter: Rate limit for ${model}. Trying next...`);
+                continue;
             } else {
-                console.error(`Error from ${model}:`, response.status, JSON.stringify(result).substring(0, 100));
-                // If it's a 400 (Bad Request), it might be our payload, but let's try next model just in case it's a model specific constraint
+                console.error(`OpenRouter: Error from ${model}:`, response.status, JSON.stringify(result).substring(0, 150));
                 continue;
             }
         } catch (err) {
-            console.error(`Failed to reach Gemini (${model}):`, err.message);
+            console.error(`OpenRouter: Failed to reach ${model}:`, err.message);
         }
     }
-    const isRateLimited = true; // If we finish the loop but hit 429s, we should mention it
-    throw new Error('Intelligence system is currently under heavy load. Please try again in 60 seconds.');
+    throw new Error('Intelligence system under heavy load');
+}
+
+// Fallback if OpenRouter isn't set up yet
+async function callGeminiDirectly(messages) {
+    const prompt = messages.map(m => m.content).join("\n");
+    const model = "gemini-1.5-flash";
+    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+    });
+    const result = await response.json();
+    if (response.status === 200) return result.candidates[0].content.parts[0].text;
+    throw new Error(`Gemini direct failed: ${response.status}`);
 }
 
 // Helper to get date boundaries
@@ -220,49 +247,49 @@ router.get('/core', async (req, res) => {
             performanceDistribution = [{ name: 'None', value: 100, fill: '#10b981' }];
         }
 
-        // --- RULE-BASED FALLBACK LAYER ---
-        let humanReadableSummary = "";
-        let causeEffectChains = [];
-        let recommendations = [];
-        let predictions = {
-            nextRiskDay: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][new Date().getDay()],
-            burnoutProbability: 15,
-            financialRisk: "Low"
-        };
+        // --- PURE AI ANALYSIS LAYER ---
+        const aiPrompt = [
+            { role: "system", content: "You are the Master Control AI. Analyze the user's weekly metrics and provide a deep strategic analysis. Return ONLY a JSON object." },
+            {
+                role: "user", content: `Data: ${JSON.stringify({
+                    metrics: data.metrics,
+                    domainStatus,
+                    recentActivities: {
+                        focusMins: data.focusSessions.length,
+                        habits: data.habits.length,
+                        routines: data.routines.length
+                    }
+                })}. 
+            
+            Generate the following JSON:
+            {
+                "aiLayer": {
+                    "humanReadableSummary": "2-sentence high-level system analysis",
+                    "causeEffectChains": ["Chain 1", "Chain 2"],
+                    "recommendations": [
+                        { "title": "...", "impact": 0-100, "risk": "Low|Med|High", "icon": "Cpu", "source": "Master Control AI", "action": "..." }
+                    ]
+                },
+                "predictions": {
+                    "nextRiskDay": "...",
+                    "burnoutProbability": 0-100,
+                    "financialRisk": "Low|Med|High"
+                }
+            }` }
+        ];
 
-        const focusStateStr = data.metrics.focus < 30 ? "Critical focus depletion detected." :
-            data.metrics.focus < 60 ? "Focus levels are sub-optimal." :
-                "Focus is holding steady.";
-
-        if (data.metrics.studyLoad > 80 && data.metrics.focus < 50) {
-            humanReadableSummary = `System indicates severe study overload resulting in rapid focus depletion (Focus: ${data.metrics.focus}%). Your cognitive stamina is breaking under the current task density.`;
-            causeEffectChains.push("Excessive Study Hours → Cognitive Fatigue → Reduced Focus Quality");
-            recommendations.push({ title: "Mandatory Deload", impact: 25, risk: "High", icon: "Timer", source: "Rule-Based Engine", action: "Reduce study load by removing 2 secondary subjects today to immediately restore baseline cognitive focus." });
-            predictions.burnoutProbability = 89;
-        } else if (data.metrics.consistency > 80 && data.metrics.focus > 75) {
-            humanReadableSummary = "Master execution state achieved. Habits are highly locked in and focus energy is optimal. You are operating at peak efficiency.";
-            causeEffectChains.push("Consistent Discipline → Lower Activation Energy → Superior Focus");
-            recommendations.push({ title: "Increase Goal Difficulty", impact: 10, risk: "Low", icon: "Target", source: "Rule-Based Engine", action: "Your momentum is stable; increase the complexity of your current goals to maintain the flow state." });
-            predictions.burnoutProbability = 5;
-        } else {
-            humanReadableSummary = `Routine is stable but showing signs of friction. ${focusStateStr} Habits are maintained at a functional baseline.`;
-            causeEffectChains.push("Average Task Density → Sub-optimal Recovery → Plateaued Growth");
-            predictions.burnoutProbability = 35;
+        let aiAnalysis;
+        try {
+            const aiRaw = await callOpenRouterAI(aiPrompt);
+            const jsonMatch = aiRaw.match(/\{[\s\S]*\}/);
+            aiAnalysis = JSON.parse(jsonMatch ? jsonMatch[0] : aiRaw);
+        } catch (e) {
+            console.error("AI Analysis Failed, using minimal fallback:", e);
+            aiAnalysis = {
+                aiLayer: { humanReadableSummary: "System analysis temporarily offline.", causeEffectChains: [], recommendations: [] },
+                predictions: { nextRiskDay: "N/A", burnoutProbability: 0, financialRisk: "Stable" }
+            };
         }
-
-        if (data.metrics.focus < 65 && !recommendations.some(r => r.title.includes('Sleep'))) {
-            recommendations.push({ title: "Extend Deep Sleep", impact: 18, risk: "Medium", icon: "Clock", source: "Rule-Based Engine", action: "Allocate an extra 60 minutes to your sleep schedule tonight to naturally replenish neurotransmitter levels." });
-        }
-        if (data.metrics.studyLoad < 50 && !recommendations.some(r => r.title.includes('Work'))) {
-            recommendations.push({ title: "Trigger Deep Work Block", impact: 12, risk: "Low", icon: "Brain", source: "Rule-Based Engine", action: "Initiate a 90-minute uninterrupted study block to break mental stagnation and increase load density." });
-        }
-        if (recommendations.length < 3) {
-            recommendations.push({ title: "Micro-Adjust Schedule", impact: 8, risk: "Low", icon: "Clock", source: "Rule-Based Engine", action: "Review and shift a low-priority task to tomorrow to clear immediate friction in your timeline." });
-        }
-        while (recommendations.length < 3) {
-            recommendations.push({ title: "Hydration Protocol", impact: 5, risk: "Low", icon: "Sparkles", source: "Rule-Based Engine", action: "Drink 500ml of water immediately to optimize cellular hydration and combat ambient fatigue." });
-        }
-        recommendations = recommendations.slice(0, 3);
 
         res.json({
             globalScore: data.globalScore,
@@ -274,12 +301,8 @@ router.get('/core', async (req, res) => {
                 performanceDistribution
             },
             heatIndicator,
-            aiLayer: {
-                humanReadableSummary,
-                causeEffectChains,
-                recommendations
-            },
-            predictions
+            aiLayer: aiAnalysis.aiLayer,
+            predictions: aiAnalysis.predictions
         });
     } catch (error) {
         console.error('Intelligence Core Error:', error);
@@ -303,10 +326,10 @@ router.post('/generate-ai', async (req, res) => {
         };
 
         // Log key presence for debugging on Render
-        if (process.env.GEMINI_API_KEY) {
-            console.log('Gemini API Key active. Model: gemini-flash-latest');
+        if (process.env.OPENROUTER_API_KEY) {
+            console.log('OpenRouter API Key active.');
         } else {
-            console.error('CRITICAL: GEMINI_API_KEY is MISSING');
+            console.warn('OPENROUTER_API_KEY is missing, falling back to Gemini direct if available.');
         }
 
         const prompt = `You are the Master Control AI. 
@@ -345,12 +368,17 @@ router.post('/generate-ai', async (req, res) => {
         }
         Provide exactly 5 BulletInsights and 3 Recommendations. Return ONLY valid JSON.`;
 
-        const resultText = await callGeminiWithFallback(prompt);
+        const messages = [
+            { role: "system", content: "You are the Master Control AI. Analyze the system data and return exactly the specified JSON schema. Return ONLY JSON." },
+            { role: "user", content: prompt }
+        ];
+
+        const resultText = await callOpenRouterAI(messages);
 
         // Robust parsing of JSON from the response
         let aiResponse;
         try {
-            // Find JSON block if Gemini adds extra text
+            // Find JSON block if AI adds extra text
             const jsonMatch = resultText.match(/\{[\s\S]*\}/);
             aiResponse = JSON.parse(jsonMatch ? jsonMatch[0] : resultText);
         } catch (e) {
@@ -361,9 +389,6 @@ router.post('/generate-ai', async (req, res) => {
         res.json(aiResponse);
     } catch (error) {
         console.error('AI Strategy Generation Error:', error);
-        if (error.message.includes('heavy load')) {
-            return res.status(429).json({ error: 'System processing limit reached. Please wait a minute.' });
-        }
         res.status(500).json({ error: 'Master Control analysis interrupted' });
     }
 });
@@ -373,8 +398,8 @@ router.post('/chat', async (req, res) => {
     try {
         const { message, metrics } = req.body;
 
-        if (!process.env.GEMINI_API_KEY) {
-            console.error('Chat Error: GEMINI_API_KEY missing');
+        if (!process.env.OPENROUTER_API_KEY && !process.env.GEMINI_API_KEY) {
+            console.error('Chat Error: No AI API keys found');
             return res.status(500).json({ reply: "My brain isn't connected to the cloud right now, friend. Check back soon?" });
         }
 
@@ -389,14 +414,15 @@ router.post('/chat', async (req, res) => {
         3. Never "pivot" a general knowledge question back to the site's metrics. If they ask about the President of India, talk about the President of India.
         4. Maintain an elite, high-knowledge, and helpful persona. You are a limitless AI power.`;
 
-        const reply = await callGeminiWithFallback(prompt);
+        const messages = [
+            { role: "system", content: "You are a master intelligence consultant. Answer directly and accurately. Use real stats only if relevant." },
+            { role: "user", content: prompt }
+        ];
+
+        const reply = await callOpenRouterAI(messages);
         res.json({ reply });
     } catch (error) {
         console.error('LLM Chat Error:', error);
-        // If we hit the rate limit on all models
-        if (error.message.includes('heavy load')) {
-            return res.status(429).json({ reply: "My processing core is currently reaching its limit across all available models. Could you give me a minute to cool down?" });
-        }
         res.status(500).json({ reply: "I'm having a little trouble thinking right now. Maybe try again in a bit, friend?" });
     }
 });
