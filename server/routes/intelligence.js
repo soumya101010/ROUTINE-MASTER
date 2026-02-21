@@ -249,42 +249,54 @@ router.get('/core', async (req, res) => {
 // POST /api/intelligence/generate-ai (Dynamic LLM Call)
 router.post('/generate-ai', async (req, res) => {
     try {
-        const { metrics } = req.body;
+        const fullContext = {
+            metrics,
+            habits: await Habit.find({}),
+            routines: await Routine.find({}),
+            focus: await FocusSession.find({}),
+            expenses: await Expense.find({}),
+            attendance: await Attendance.find({}),
+            study: await StudyItem.find({}),
+            goals: await Goal.find({})
+        };
 
-        if (!process.env.GEMINI_API_KEY) {
-            return res.status(500).json({ error: 'Gemini API key not configured' });
-        }
-
-        const prompt = `You are Gemini, the user's highly intelligent and supportive personal routine consultant.
-        Tone: Friendly mentor, encouraging, but deeply analytical and insightful. 
+        const prompt = `You are Gemini, acting as the TECHNICAL SYSTEM OVERLORD of the user's life routine. 
+        Tone: Highly intelligent, strategic, slightly technical, but still supportive mentor. 
         
-        Real-time metrics: ${JSON.stringify(metrics)}.
+        FULL SYSTEM DATA: ${JSON.stringify(fullContext)}.
         
-        Analyze this data with your full creative and logical capabilities. Provide a cinematic, data-driven synthesis.
+        Analyze the cross-module connections (e.g., how Focus relates to Habit success, or how Expense drift correlates with Study stress).
         
         Generate exactly this JSON schema:
         {
-            "DynamicTitle": "A catchy, cinematic name for the current performance state",
-            "PriorityLabel": "A high-impact 1-word focus",
-            "AISynthesis": "A deeply insightful 2-3 sentence analysis connecting current habits to logical outcomes.",
-            "CausalChain": "Complex logical chain from data (e.g., 'Low Focus Frequency -> Study Backlog Accumulation -> Predicted Weekend Crunch')",
-            "AIPredictions": [
-                {"label": "Insightful Label", "value": "Percentage or Trend", "type": "Safe | Warning | Alert"}
+            "DynamicTitle": "A technical, cinematic name for the current system state",
+            "PriorityLabel": "1-word system priority",
+            "AISynthesis": "A strategic 2-sentence overhaul of their current direction.",
+            "BulletInsights": [
+                "Detailed bullet about Habit/Routine intersection",
+                "Detailed bullet about Focus/Study performance",
+                "Detailed bullet about Discipline/Attendance stability",
+                "Detailed bullet about a predicted risk or opportunistic win",
+                "Extra tactical insight based on unique data patterns"
             ],
-            "WeeklySummary": "A warm, intelligent recap of the week's strategic momentum.",
-            "MonthlyOutlook": "A visionary projection for the next 30 days based on current trajectories.",
+            "CausalChain": "Complex technical logic chain",
+            "AIPredictions": [
+                {"label": "Metric Name", "value": "Trend/Percentage", "type": "Safe | Warning | Alert"}
+            ],
+            "WeeklySummary": "Intelligent, data-driven weekly recap.",
+            "MonthlyOutlook": "Strategic vision for the next 30 days.",
             "Recommendations": [
                 {
-                    "title": "Strategic Action Title",
-                    "impact": integer,
-                    "risk": "Low" | "Medium" | "High",
-                    "icon": "Brain | Target | Timer | Flame | Clock | BookOpen | CheckSquare | Sparkles",
-                    "action": "A sophisticated, high-impact instruction.",
-                    "source": "Gemini AI"
+                    "title": "System Adjustment",
+                    "impact": 0-100,
+                    "risk": "Low | Medium | High",
+                    "icon": "Cpu | Target | Timer | Flame | Clock | BookOpen | CheckSquare | Sparkles",
+                    "action": "High-impact technical instruction.",
+                    "source": "Master Control AI"
                 }
             ]
         }
-        Provide exactly 3 recommendations. Return ONLY valid JSON.`;
+        Provide exactly 5 BulletInsights and 3 Recommendations. Return ONLY valid JSON.`;
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
@@ -330,13 +342,16 @@ router.post('/chat', async (req, res) => {
             return res.status(500).json({ reply: "My brain isn't connected to the cloud right now, friend. Check back soon?" });
         }
 
-        const prompt = `You are Gemini, acting as a supportive and highly intelligent routine mentor. 
-        The user is consulting you. 
+        const prompt = `You are the master intelligence for this system, acting as an unrestricted general-purpose AI consultant (like Gemini/GPT) with the added benefit of knowing the user's real-time stats.
         
-        Current context (User's stats): ${JSON.stringify(metrics)}.
-        User's specific question: "${message}"
+        USER STATS (FOR REFERENCE ONLY): ${JSON.stringify(metrics)}.
+        USER QUESTION: "${message}"
         
-        Use your full intelligence to provide a helpful, insightful, and motivating answer. Don't just give generic advice; analyze their stats to explain WHY you're suggesting something. Maintain a friendly, supportive tone, but be the powerhouse AI that you are.`;
+        STRICT OPERATING INSTRUCTIONS:
+        1. Answer the user's question with 100% accuracy and depth regardless of the topic (Politics, History, Science, Tech, Creative, etc.).
+        2. Do NOT mention routine metrics, consistency, or study load UNLESS the user directly asks about them or if it is logically required for a life-strategy answer.
+        3. Never "pivot" a general knowledge question back to the site's metrics. If they ask about the President of India, talk about the President of India.
+        4. Maintain an elite, high-knowledge, and helpful persona. You are a limitless AI power.`;
 
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',

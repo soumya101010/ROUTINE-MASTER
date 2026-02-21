@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid, PieChart, Pie, Cell } from 'recharts';
-import { Brain, ArrowLeft, Target, Timer, Flame, Clock, BookOpen, FileText, DollarSign, CheckSquare, TriangleAlert, Bell, CalendarIcon, Loader2, Sparkles, Search, ChevronRight, Send } from 'lucide-react';
+import { Brain, Cpu, ArrowLeft, Target, Timer, Flame, Clock, BookOpen, FileText, DollarSign, CheckSquare, TriangleAlert, Bell, CalendarIcon, Loader2, Sparkles, Search, ChevronRight, Send } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { intelligenceAPI } from '../utils/api';
 import './RoutineIntelligenceCore.css';
@@ -17,7 +17,7 @@ const ModuleIcons = {
 
 // Extracted AI components mapper for recommendations
 const IconDictionary = {
-    Brain, Target, Timer, Flame, Clock, BookOpen, CheckSquare, Sparkles
+    Brain, Cpu, Target, Timer, Flame, Clock, BookOpen, CheckSquare, Sparkles
 };
 
 // AISummary is now a pure presentational component that receives dynamicAI
@@ -27,12 +27,15 @@ const AISummary = ({ currentMetrics, initialLayer, dynamicAI, loadingAI }) => {
     const [userMessage, setUserMessage] = useState('');
     const [isThinking, setIsThinking] = useState(false);
     const chatEndRef = useRef(null);
+    const scrollContainerRef = useRef(null);
 
     const synthesisText = dynamicAI ? dynamicAI.AISynthesis : initialLayer.humanReadableSummary;
     const causalText = dynamicAI ? dynamicAI.CausalChain : (initialLayer.causeEffectChains && initialLayer.causeEffectChains[0]);
 
     const scrollToBottom = () => {
-        chatEndRef.current?.scrollIntoView({ behavior: "smooth" });
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollTop = scrollContainerRef.current.scrollHeight;
+        }
     };
 
     useEffect(() => {
@@ -60,30 +63,38 @@ const AISummary = ({ currentMetrics, initialLayer, dynamicAI, loadingAI }) => {
 
     return (
         <div className="ai-summary-content friendly-mentor">
-            <div className="mentor-vibe-header" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '1rem' }}>
-                <div className="source-tag" style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '1px', padding: '2px 8px', borderRadius: '4px', background: dynamicAI ? 'rgba(168, 85, 247, 0.2)' : 'rgba(59, 130, 246, 0.2)', color: dynamicAI ? '#a855f7' : '#3b82f6', fontWeight: 700 }}>
-                    {dynamicAI ? "Live Gemini AI" : "Local Engine"}
-                </div>
+            <div className="summary-item positive" style={{ border: '1px solid rgba(168, 85, 247, 0.2)', background: 'rgba(168, 85, 247, 0.05)' }}>
+                <Cpu size={16} className="text-purple-400" /> System Mastery Engaged
             </div>
 
-            {currentMetrics.consistency > 75 ? (
-                <div className="summary-item positive"><span className="dot bg-blue-500"></span> Your habits are looking super strong!</div>
-            ) : (
-                <div className="summary-item warning"><TriangleAlert size={16} /> Habits are slightly slipping, friend.</div>
-            )}
-            {currentMetrics.studyLoad > 80 ? (
-                <div className="summary-item warning"><TriangleAlert size={16} /> Careful, you're loading up a bit much.</div>
-            ) : (
-                <div className="summary-item positive"><span className="dot bg-green-500"></span> Your workload is in the sweet spot.</div>
-            )}
+            <div className="bullet-insights-container" style={{ marginTop: '1rem', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {dynamicAI && dynamicAI.BulletInsights ? dynamicAI.BulletInsights.map((bullet, i) => (
+                    <div key={i} className="summary-item animate-fade-in" style={{ fontSize: '0.8rem', padding: '0.6rem 0.8rem', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                        <Sparkles size={12} className="text-blue-400" /> {bullet}
+                    </div>
+                )) : (
+                    <>
+                        {currentMetrics.consistency > 75 ? (
+                            <div className="summary-item positive"><span className="dot bg-blue-500"></span> Your habits are looking super strong!</div>
+                        ) : (
+                            <div className="summary-item warning"><TriangleAlert size={16} /> Habits are slightly slipping, friend.</div>
+                        )}
+                        {currentMetrics.studyLoad > 80 ? (
+                            <div className="summary-item warning"><TriangleAlert size={16} /> Careful, you're loading up a bit much.</div>
+                        ) : (
+                            <div className="summary-item positive"><span className="dot bg-green-500"></span> Your workload is in the sweet spot.</div>
+                        )}
+                    </>
+                )}
+            </div>
 
-            <div className="brain-graphic-small">
-                <Brain size={80} className="text-blue-400 mentor-brain-icon" style={{ filter: 'drop-shadow(0 0 15px rgba(96, 165, 250, 0.5))' }} />
+            <div className="brain-graphic-small" style={{ margin: '1.5rem 0' }}>
+                <Cpu size={80} className="text-purple-400 mentor-brain-icon" style={{ filter: 'drop-shadow(0 0 20px rgba(168, 85, 247, 0.4))' }} />
             </div>
 
             {showInsights && (
                 <div className="insights-expansion animate-fade-in chat-bubble" style={{ maxHeight: '400px', display: 'flex', flexDirection: 'column' }}>
-                    <div style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '5px', marginBottom: '10px' }} className="custom-scrollbar">
+                    <div ref={scrollContainerRef} style={{ flexGrow: 1, overflowY: 'auto', paddingRight: '5px', marginBottom: '10px', scrollBehavior: 'smooth' }} className="custom-scrollbar">
                         {loadingAI ? (
                             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', color: '#a855f7', padding: '10px' }}>
                                 <Loader2 className="animate-spin" size={18} /> Just thinking for a second...
