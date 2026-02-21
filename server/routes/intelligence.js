@@ -25,20 +25,20 @@ const getAggregatedData = async () => {
     const { start: weekStart, end: now } = getTrailingDates(7);
     const { start: monthStart } = getTrailingDates(30);
 
-    // Run aggregations in parallel
+    // Run aggregations in parallel with lean() for pure JSON
     const [
         focusSessions, habits, routines, expenses, attendance,
         studyItems, goals, recentReviews, documents
     ] = await Promise.all([
-        FocusSession.find({ completedAt: { $gte: weekStart } }),
-        Habit.find({}),
-        Routine.find({}),
-        Expense.find({ date: { $gte: monthStart } }),
-        Attendance.find({ date: { $gte: monthStart } }),
-        StudyItem.find({}),
-        Goal.find({}),
-        WeeklyReview.find({ weekStartDate: { $gte: monthStart } }).sort({ weekStartDate: -1 }).limit(1),
-        Document.find({})
+        FocusSession.find({ completedAt: { $gte: weekStart } }).lean(),
+        Habit.find({}).lean(),
+        Routine.find({}).lean(),
+        Expense.find({ date: { $gte: monthStart } }).lean(),
+        Attendance.find({ date: { $gte: monthStart } }).lean(),
+        StudyItem.find({}).lean(),
+        Goal.find({}).lean(),
+        WeeklyReview.find({ weekStartDate: { $gte: monthStart } }).sort({ weekStartDate: -1 }).limit(1).lean(),
+        Document.find({}).lean()
     ]);
 
     // 1. Consistency / Discipline logic (Attendance, Habits)
@@ -251,19 +251,24 @@ router.post('/generate-ai', async (req, res) => {
     try {
         const fullContext = {
             metrics,
-            habits: await Habit.find({}),
-            routines: await Routine.find({}),
-            focus: await FocusSession.find({}),
-            expenses: await Expense.find({}),
-            attendance: await Attendance.find({}),
-            study: await StudyItem.find({}),
-            goals: await Goal.find({})
+            habits: (await Habit.find({}).limit(20).lean()),
+            routines: (await Routine.find({}).limit(20).lean()),
+            focus: (await FocusSession.find({}).limit(20).lean()),
+            expenses: (await Expense.find({}).limit(10).lean()),
+            attendance: (await Attendance.find({}).limit(10).lean()),
+            study: (await StudyItem.find({}).limit(10).lean()),
+            goals: (await Goal.find({}).limit(10).lean())
         };
 
-        const prompt = `You are Gemini, acting as the TECHNICAL SYSTEM OVERLORD of the user's life routine. 
-        Tone: Highly intelligent, strategic, slightly technical, but still supportive mentor. 
-        
-        FULL SYSTEM DATA: ${JSON.stringify(fullContext)}.
+        // Log key presence (first 4 chars) for debugging on Render
+        if (process.env.GEMINI_API_KEY) {
+            console.log('Gemini API Key loaded (starts with):', process.env.GEMINI_API_KEY.substring(0, 4));
+        } else {
+            console.error('CRITICAL: GEMINI_API_KEY is MISSING from process.env');
+        }
+
+        const prompt = `You are the Master Control AI. 
+        Life Data: ${JSON.stringify(fullContext)}.
         
         Analyze the cross-module connections (e.g., how Focus relates to Habit success, or how Expense drift correlates with Study stress).
         
@@ -298,23 +303,23 @@ router.post('/generate-ai', async (req, res) => {
         }
         Provide exactly 5 BulletInsights and 3 Recommendations. Return ONLY valid JSON.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }]
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
 
         const result = await response.json();
 
+        if (response.status !== 200) {
+            console.error('Gemini API Error Status:', response.status);
+            console.error('Gemini API Error Body:', JSON.stringify(result));
+            return res.status(500).json({ error: `Gemini API returned ${response.status}`, details: result });
+        }
+
         if (!result.candidates || !result.candidates[0].content || !result.candidates[0].content.parts) {
-            console.error('Gemini API Error:', result);
-            return res.status(500).json({ error: 'Empty response from Gemini' });
+            console.error('Gemini API Structure Error:', result);
+            return res.status(500).json({ error: 'Incomplete response from Gemini' });
         }
 
         const text = result.candidates[0].content.parts[0].text;
@@ -339,6 +344,7 @@ router.post('/chat', async (req, res) => {
         const { message, metrics } = req.body;
 
         if (!process.env.GEMINI_API_KEY) {
+            console.error('Chat Error: GEMINI_API_KEY missing');
             return res.status(500).json({ reply: "My brain isn't connected to the cloud right now, friend. Check back soon?" });
         }
 
@@ -353,21 +359,21 @@ router.post('/chat', async (req, res) => {
         3. Never "pivot" a general knowledge question back to the site's metrics. If they ask about the President of India, talk about the President of India.
         4. Maintain an elite, high-knowledge, and helpful persona. You are a limitless AI power.`;
 
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-latest:generateContent?key=${process.env.GEMINI_API_KEY}`, {
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{ text: prompt }]
-                }]
-            })
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
         });
 
         const result = await response.json();
-        const reply = result.candidates[0].content.parts[0].text;
 
+        if (response.status !== 200) {
+            console.error('Chat API Error Status:', response.status);
+            console.error('Chat API Error Body:', JSON.stringify(result));
+            return res.status(500).json({ reply: "I'm having a little trouble thinking right now. Maybe try again in a bit?" });
+        }
+
+        const reply = result.candidates[0].content.parts[0].text;
         res.json({ reply });
     } catch (error) {
         console.error('LLM Chat Error:', error);
