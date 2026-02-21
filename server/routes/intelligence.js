@@ -185,7 +185,7 @@ router.get('/core', async (req, res) => {
             .slice(0, 5) // Take top 5 struggles
             .map((item, index) => ({
                 name: item.name,
-                value: Math.pow(item.value, 4), // Quartic scaling to severely crush moderate numbers compared to 100s
+                value: item.value, // Linear scaling: True percentage gap from 100
                 trueScore: item.trueScore, // True module score for the text legend
                 fill: failureColors[index % failureColors.length]
             }));

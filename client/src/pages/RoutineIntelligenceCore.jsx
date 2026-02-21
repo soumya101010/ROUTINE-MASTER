@@ -64,9 +64,9 @@ export default function RoutineIntelligenceCore() {
             {/* Header */}
             <header className="ric-core-topbar">
                 <button onClick={() => navigate(-1)} className="back-btn"><ArrowLeft size={24} /></button>
-                <div className="core-title-container animate-fade-in" style={{ flexWrap: 'nowrap' }}>
-                    <h1 className="module-title text-gradient" style={{ margin: 0, fontSize: 'clamp(1.2rem, 5vw, 28px)', fontWeight: 800, whiteSpace: 'nowrap' }}>Routine Intelligence</h1>
-                    <span className="badge" style={{ fontSize: '0.85rem', padding: '4px 10px', whiteSpace: 'nowrap' }}>Core</span>
+                <div className="core-title-container animate-fade-in" style={{ flexWrap: 'nowrap', minWidth: 0, overflow: 'hidden' }}>
+                    <h1 className="module-title text-gradient" style={{ margin: 0, fontSize: 'clamp(1rem, 5vw, 24px)', fontWeight: 800, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Routine Intelligence</h1>
+                    <span className="badge" style={{ fontSize: '0.85rem', padding: '4px 10px', whiteSpace: 'nowrap', flexShrink: 0 }}>Core</span>
                 </div>
                 <div className="top-actions" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                     {isSearching ? (
@@ -227,7 +227,7 @@ export default function RoutineIntelligenceCore() {
                                         <PieChart>
                                             <Pie data={data.charts.failureCauses} cx="50%" cy="50%" innerRadius={50} outerRadius={75} paddingAngle={4} dataKey="value" stroke="none">
                                                 {data.charts.failureCauses.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={entry.fill} style={{ filter: `drop-shadow(0 0 5px ${entry.fill})` }} />
+                                                    <Cell key={`cell-${index}`} fill={entry.fill} />
                                                 ))}
                                             </Pie>
                                         </PieChart>
@@ -239,7 +239,7 @@ export default function RoutineIntelligenceCore() {
                                         <div key={i} className="pie-leg">
                                             <span className="dot" style={{ backgroundColor: entry.fill, boxShadow: `0 0 8px ${entry.fill}` }}></span>
                                             <span className="name">{entry.name}</span>
-                                            <span className="val">{entry.trueScore}%</span>
+                                            <span className="val">{entry.value}%</span>
                                         </div>
                                     ))}
                                 </div>
